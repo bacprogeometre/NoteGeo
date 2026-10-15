@@ -88,8 +88,17 @@ L'appli s'ouvre alors dans sa propre fenêtre, avec son icône, sans barre d'adr
 1. **Classes** : créez une classe, puis collez la liste des élèves (une ligne par élève, `Nom;Prénom`) ou importez un CSV.
 2. **Évaluer** : choisissez la classe, puis créez l'évaluation de l'une de ces deux façons :
    - **Compétences du référentiel** : choisissez l'activité, ses compétences se cochent toutes seules avec une pondération égale en %, modifiable.
-   - **Mes questions / critères** : collez vos questions (une par ligne, numéros et puces acceptés, barème facultatif comme « (2 pts) » ou « 20 % »), puis touchez « Créer la grille ». L'appli propose pour chaque question une compétence C01 à C14, ainsi que l'activité, d'après les mots employés. Vérifiez et corrigez si besoin.
-3. Notez chaque élève avec les 4 boutons. Le bouton **appareil photo** d'une ligne ouvre la caméra ou la galerie, et la photo est rattachée à l'élève et à la ligne. Flèches pour passer à l'élève suivant. Tout s'enregistre seul.
+   - **Mes questions / critères** : collez vos questions, avec leurs critères si vous voulez, puis touchez « Créer la grille ». Format conseillé :
+     ```
+     Question 1 : Quelle est la valeur de l'angle ? Critères : résultat 1 pt ; unité 1 pt
+     Question 2 : Calculer la dénivelée entre A et B
+     - méthode 1 pt
+     - résultat juste 1 pt
+     Question 3 : Mettre en station le niveau (2 pts)
+     ```
+     L'appli propose pour chaque question une compétence C01 à C14, ainsi que l'activité. Vous pouvez ensuite modifier le texte, ajouter ou retirer des critères (« + Ajouter un critère ») et changer les points.
+   - Dans le mode **référentiel**, « Noter par les critères officiels » sous une compétence permet de cocher les critères officiels à faire apparaître, chacun avec ses points. Sans critère coché, la compétence est notée d'un seul bloc.
+3. Notez chaque élève avec les 4 boutons (sur chaque critère quand la ligne en a : Non acquis = 0 % des points, Fragile = 33 %, Satisfaisant = 67 %, Très bien = 100 %). Avec l'échelle à **5 niveaux** (réglage en bas de l'onglet Classes), un niveau « Moyen » à 50 % s'ajoute entre Fragile et Satisfaisant. Le bouton **appareil photo** d'une ligne ouvre la caméra ou la galerie, et la photo est rattachée à l'élève et à la ligne. Flèches pour passer à l'élève suivant. Tout s'enregistre seul.
 4. **Résultats** : tableau de la classe, moyenne, alertes, **export Pronote (CSV)** et **fiches PDF** avec les photos.
 5. **Affichage du résultat** (en bas de l'onglet Classes) : note /20, pourcentage, ou niveau seul (Non acquis → Très bien maîtrisé).
 6. Touchez un élève dans **Classes** pour voir sa fiche : progression par compétence et bilan U2 / U31 / U32.

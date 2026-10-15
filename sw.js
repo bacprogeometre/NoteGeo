@@ -1,6 +1,6 @@
 // Notes Géo — service worker : rend l'appli installable et la page disponible hors connexion.
 // Les données (Supabase) ne sont jamais mises en cache ici.
-const CACHE = 'notesgeo-v5';
+const CACHE = 'notesgeo-v7';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192-v3.png', './icon-512-v3.png', './icon-maskable-512-v3.png', './apple-touch-icon-v3.png'];
 const LIBS = ['cdn.jsdelivr.net', 'cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 

@@ -22,7 +22,7 @@
 :root{
   --bg:#F7F8FA; --surface:#FFFFFF; --soft:#EEF1F5; --ink:#1C2B39; --muted:#5A6672; --line:#D9DEE5; --line2:#C9C6BA;
   --blue:#2F6DB5; --blue-soft:#EAF1FA; --blue-line:#C9DBF0; --accent:#B8410C;
-  --l0:#F28B82; --l1:#FFCC80; --l2:#A8D1F0; --l3:#3B78C2;
+  --l0:#F28B82; --l1:#FFCC80; --l4:#FFE68A; --l2:#A8D1F0; --l3:#3B78C2;
   --ok:#3F6B3A; --warn-bg:#FFF4E5; --warn-line:#FFCC80; --warn-ink:#7A3A00; --danger:#B3261E;
   --f-body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
@@ -112,6 +112,10 @@ textarea.inp,label.f textarea{min-height:90px;resize:vertical}
 .lv[aria-pressed="true"][data-v="1"]{background:var(--l1)}
 .lv[aria-pressed="true"][data-v="2"]{background:var(--l2)}
 .lv[aria-pressed="true"][data-v="3"]{background:var(--l3);color:#fff}
+.lv[aria-pressed="true"][data-v="4"]{background:var(--l4)}
+.cell.c4{background:var(--l4);color:var(--ink)}
+.levels5 .cline{grid-template-columns:minmax(0,240px) repeat(5,minmax(0,1fr)) 60px}
+@media (max-width:760px){.levels5 .cline{grid-template-columns:repeat(5,minmax(0,1fr)) 50px}.levels5 .cline.sub{grid-template-columns:repeat(5,minmax(0,1fr))}.levels5 .lv{font-size:.72rem;padding:2px}}
 @media (max-width:480px){.lv{font-size:.76rem;hyphens:manual}.cline{gap:5px}}
 .cam{position:relative;min-height:56px;border:1px solid var(--blue-line);border-radius:8px;background:var(--blue-soft);display:flex;align-items:center;justify-content:center}
 .cam svg{width:24px;height:24px}
@@ -176,21 +180,41 @@ tr.click:hover td.n{color:var(--blue)}
 .seg button[aria-pressed="true"]{background:var(--blue);color:#fff}
 .pctin{display:inline-flex;align-items:center;gap:4px;flex:none}
 .pctin input{width:72px;min-height:38px;padding:4px 8px;text-align:right}
-.qrow{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.qcard{border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:8px;display:flex;flex-direction:column;gap:6px}
+.qrow{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start}
 .qrow .qn{width:30px;padding-top:12px;flex:none}
 .qrow .qt{flex:1 1 240px;min-height:44px;resize:vertical;overflow:hidden}
 .qrow .qc{flex:1 1 180px;display:flex;flex-direction:column;gap:2px;min-width:0}
 .qrow .qc select{min-height:44px}
 .qrow .qp{padding-top:3px}
 .qrow .qx{min-height:44px;width:44px;padding:0}
+.crow{display:flex;gap:6px;align-items:center;padding-left:36px}
+.crow > input.inp{flex:1;min-width:0;min-height:38px;padding:4px 10px}
+.linkbtn{border:0;background:transparent;color:var(--blue);font-weight:700;font-size:.85rem;padding:6px 0;text-align:left;align-self:flex-start;text-decoration:underline}
+.qcard .linkbtn{margin-left:36px}
+.refrow{display:flex;flex-direction:column;gap:2px;padding:4px 0;border-bottom:1px solid var(--line)}
+.refrow .linkbtn{margin-left:30px;padding:2px 0}
+.hint{background:var(--bg);border:1px dashed var(--line2);border-radius:10px;padding:10px 12px;font-size:.84rem;color:var(--muted)}
+.hint pre{margin:6px 0;white-space:pre-wrap;font:.8rem/1.45 var(--f-mono);color:var(--ink);background:var(--surface);border-radius:6px;padding:8px 10px;overflow-x:auto}
 .auto{font-size:.72rem;font-weight:700;color:#1E5B2A}
 .auto.warn{color:var(--warn-ink)}
 .sugg{background:#EDF7EE;border:1px solid #BFE0C4;color:#1E5B2A;border-radius:8px;padding:10px 12px;font-size:.88rem}
 .tot{font-size:.88rem}.tot.bad{color:var(--danger)}
 .lvtxt{font-family:var(--f-body);font-size:1.8rem;font-weight:700}
 .qlist{margin:0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:6px;font-size:.9rem}
+.clist{margin:2px 0 0;padding-left:44px;font-size:.84rem}
 .split.wide{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr)}
 @media (max-width:900px){.split.wide{grid-template-columns:1fr}}
+.chead{display:flex;align-items:center;gap:8px}
+.chead .ctitle{flex:1;min-width:0}
+.chead .cam{width:60px;flex:none}
+.cell.sum{min-width:46px;flex:none}
+.cline.sub{padding-left:12px;border-left:3px solid var(--line)}
+.cline.sub .lv{min-height:46px}
+.cline.sub .ctitle{flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:6px}
+.t2{font-size:.9rem;font-weight:700}
+.h2{font-size:.78rem;color:var(--muted);font-family:var(--f-mono)}
+@media (max-width:760px){.cline.sub > span[aria-hidden]{display:none}.cline.sub{grid-template-columns:repeat(4,minmax(0,1fr))}}
 /* overlays */
 .ov{position:fixed;inset:0;z-index:50;background:rgba(15,22,30,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .ov img{max-width:100%;max-height:72vh;border-radius:8px}
@@ -266,7 +290,10 @@ const UNITS = [
   {id:'U31',name:'Activités topographiques et traitement de données',comps:['C06','C07','C08','C09','C10','C11']},
   {id:'U32',name:'Détection de réseaux',comps:['C12','C13','C14']}
 ];
-const LEVELS = [{n:'Non acquis',a:'NA'},{n:'Fragile',a:'F'},{n:'Satisfaisant',a:'S',h:'Satis&shy;faisant'},{n:'Très bien maîtrisé',a:'TB'}];
+const LEVELS = [{n:'Non acquis',a:'NA',f:0},{n:'Fragile',a:'F',f:1/3},{n:'Satisfaisant',a:'S',h:'Satis&shy;faisant',f:2/3},{n:'Très bien maîtrisé',a:'TB',f:1},{n:'Moyen',a:'M',f:1/2}];
+/* Ordre d'affichage : 4 niveaux, ou 5 avec « Moyen » (50 %) entre Fragile et Satisfaisant. Les valeurs 0 à 3 gardent leur sens. */
+const lvOrder = ()=> S.echelle===5 ? [0,1,4,2,3] : [0,1,2,3];
+const lvF = v=> LEVELS[v]?.f ?? v/3;
 const TYPES = ['TP terrain','Contrôle écrit','DAO / CAO','Oral'];
 const DEFAULT_FAV = ['Bonne autonomie.','Auto-contrôles à systématiser.','Croquis peu exploitable.','Travail soigné.','Consignes de sécurité à respecter.'];
 
@@ -279,10 +306,10 @@ const KW = {
   C04:['foncier|3','limite','propriet|2',' borne','bornage|3','parcelle|2','geofoncier|3','servitude','mitoyen'],
   C05:['document foncier|3','dmpc|3','cadastr|2','division','proces-verbal','proces verbal','plan de bornage|3'],
   C06:['securi|3',' epi','gilet','casque','balisage|2','risque','danger','prevention','circulation','ppsps|3','accident'],
-  C07:[' leve|2',' lever','nivellement|2','nivelle','mire|2','lecture|2','carnet','mise en station|2','station','point de detail','croquis|2','codification','visee','portee','denivel','altitude',' fil ','stadimetr|2','parallaxe|2','releve','calage','auto-controle','autocontrole','recolement'],
+  C07:[' leve|2','mesur',' lever','nivellement|2','nivelle','mire|2','lecture|2','carnet','mise en station|2','station','point de detail','croquis|2','codification','visee','portee','denivel','altitude',' fil ','stadimetr|2','parallaxe|2','releve','calage','auto-controle','autocontrole','recolement'],
   C08:['implant|4','piquet|2','chaise|2','trait de niveau|2',' axe','controle d implantation|3'],
   C09:['georef|4','gnss|4',' gps','rtk|3','lambert|3','rattach|3','rgf','cc4','geodesi|3','canevas','point d appui|2',' ign '],
-  C10:['calcul|3','compens|3','fermeture|3','toleranc|2','ecart','traitement|2','transfert','logiciel','nuage|2','correlation','coordonnee','gisement|2','controle arithmetique|3','somme','moyenne','export','import'],
+  C10:['calcul|3','angle',' azimut','compens|3','fermeture|3','toleranc|2','ecart','traitement|2','transfert','logiciel','nuage|2','correlation','coordonnee','gisement|2','controle arithmetique|3','somme','moyenne','export','import'],
   C11:[' plan|2','dessin|2','dao|3','cao|3','autocad|3','covadis|3','mensura|3','cartouche|2','legende','profil','rendu','livrable','echelle','mise en page'],
   C12:['detect|4','reseau|2','radar|3','electromagnet|3','canalisation','cable','affleurant|2','emergence'],
   C13:['marquage|4','piquetage|2','peinture','p98|3','code couleur|2','materialiser les reseaux|3'],
@@ -307,28 +334,65 @@ function suggestAct(items){
   }
   return best;
 }
-/* Découpe un texte collé en questions / critères, avec barème facultatif en fin de ligne */
-function parseQuestions(txt){
-  const out=[];
-  for(let line of String(txt||'').split(/\r?\n/)){
-    line=line.trim(); if(!line) continue;
-    let w=null;
-    if(line.includes('\t')){
-      const cells=line.split('\t').map(s=>s.trim()).filter(Boolean);
-      const v=cells.length>1?num(cells[cells.length-1].replace(/\s*(pts?|points?|%)\s*$/i,'')):null;
-      if(v!=null){w=v;cells.pop()}
-      line=cells.join(' ');
-    }
-    const m=line.match(/[\s(\[]*(\d+(?:[.,]\d+)?)\s*(pts?|points?|%)\s*[)\]]?\s*$/i)||line.match(/\s\/\s*(\d+(?:[.,]\d+)?)\s*$/);
-    if(m&&w==null){w=num(m[1]);line=line.slice(0,m.index).trim()}
-    let prev;
-    do{prev=line;line=line.replace(/^(?:[-–—•*·▪►✓☐□]|q\s*\d+\s*[:.)\-–]?|\(?\d+(?:\.\d+)*\s*[.)°:\-–]|\(?[a-h]\s*[.)])\s*/i,'')}while(line!==prev&&line);
-    line=line.replace(/[\s:;,–-]+$/,'');
-    if(line.length<2) continue;
-    out.push({texte:line,w});
-  }
+/* Lecture d'un texte collé : questions, critères et barème.
+   Exemples acceptés :
+     Question 1 : Quelle est la valeur de l'angle ? Critères : résultat 1 pt ; unité 1 pt
+     2. Calculer la dénivelée (3 pts)
+        - méthode 1 pt
+        - résultat juste 1 pt
+     Une liste simple (une question par ligne, sans numéro) reste possible. */
+const PTS_RE=/(\d+(?:[.,]\d+)?)\s*(?:pts?|points?)\b\.?\)?/gi;
+const Q_RE=/^\s*(?:(?:question|quest\.?|exercice|ex\.?|q)\s*\d+\s*[:.)\-–]?|\d+(?:\.\d+)*\s*[.)°:\-–])\s*/i;
+const BUL_RE=/^\s*(?:[-–—•*·▪►✓☐□]|\(?[a-h]\s*[.)])\s+/i;
+const CRIT_RE=/crit[eè]res?(?:\s+d['’]\s*[eé]valuation)?\s*:/i;
+const cleanT = s=>String(s||'').replace(/^[\s:;,.–\-()]+|[\s:;,–\-(]+$/g,'').trim();
+function splitPts(s){
+  s=String(s||'').trim().replace(BUL_RE,'');
+  let w=null;
+  if(s.includes('\t')){const cells=s.split('\t').map(x=>x.trim()).filter(Boolean);const v=cells.length>1?num(cells[cells.length-1].replace(/\s*(pts?|points?|%)\s*$/i,'')):null;if(v!=null){w=v;cells.pop()}s=cells.join(' ')}
+  const m=s.match(/[\s(\[:=–-]*(\d+(?:[.,]\d+)?)\s*(pts?|points?|%)\.?\s*[)\]]?\s*$/i)||s.match(/\s\/\s*(\d+(?:[.,]\d+)?)\s*$/);
+  if(m&&w==null){w=num(m[1]);s=s.slice(0,m.index)}
+  return {t:cleanT(s),pts:w};
+}
+function parseCritList(s){
+  s=String(s||''); const out=[]; let last=0, m; PTS_RE.lastIndex=0;
+  while((m=PTS_RE.exec(s))){const t=cleanT(s.slice(last,m.index));if(t)out.push({t,pts:num(m[1])});last=PTS_RE.lastIndex}
+  const tail=cleanT(s.slice(last));
+  if(tail) (out.length?[tail]:tail.split(/\s*[;,]\s*/)).forEach(t=>{if(cleanT(t))out.push({t:cleanT(t),pts:null})});
   return out;
 }
+function parseQuestions(txt){
+  const lines=String(txt||'').split(/\r?\n/).filter(l=>l.trim());
+  const structured=lines.some(l=>Q_RE.test(l)||CRIT_RE.test(l));
+  const out=[]; let cur=null;
+  const newQ=t=>{const sp=splitPts(t);cur={texte:sp.t,w:sp.pts,crits:[]};out.push(cur)};
+  for(const raw of lines){
+    let line=raw.trim();
+    if(!structured){let prev;do{prev=line;line=line.replace(BUL_RE,'')}while(line!==prev&&line);newQ(line);continue}
+    const qm=line.match(Q_RE);
+    if(qm){
+      line=line.slice(qm[0].length); const ci=line.search(CRIT_RE);
+      if(ci>=0){newQ(line.slice(0,ci));cur.crits.push(...parseCritList(line.slice(ci).replace(CRIT_RE,'')))} else newQ(line);
+      continue;
+    }
+    if(CRIT_RE.test(line)){
+      const ci=line.search(CRIT_RE); const before=cleanT(line.slice(0,ci));
+      if(before||!cur) newQ(before||'Question'); cur.crits.push(...parseCritList(line.slice(ci).replace(CRIT_RE,''))); continue;
+    }
+    if(cur&&BUL_RE.test(line)){const sp=splitPts(line);if(sp.t)cur.crits.push(sp);continue}
+    const sp=splitPts(line);
+    if(cur&&sp.pts!=null&&sp.t.length<60){cur.crits.push(sp);continue}
+    newQ(line);
+  }
+  return out.filter(q=>q.texte.length>=2||q.crits.length).map(q=>({texte:q.texte||'Question',w:q.w,crits:q.crits.filter(c=>c.t)}));
+}
+const EXEMPLE_Q = `Question 1 : Quelle est la valeur de l'angle ? Critères : résultat 1 pt ; unité 1 pt
+Question 2 : Calculer la dénivelée entre A et B
+- méthode 1 pt
+- résultat juste 1 pt
+- unité 0,5 pt
+Question 3 : Mettre en station le niveau (2 pts)
+Question 4 : Porter les EPI et baliser la zone (1 pt)`;
 /* Répartit 100 % en valeurs à 0,1 près */
 function toPct(ws){
   const t=ws.reduce((a,b)=>a+b,0)||1; const r=ws.map(w=>Math.round(w/t*1000)/10);
@@ -422,7 +486,7 @@ let B = null;
 /* ======================================================================
    5. ÉTAT
    ====================================================================== */
-const S = {classes:[],students:[],evaluations:[],results:{},fav:DEFAULT_FAV.slice(),affichage:'note20'};
+const S = {classes:[],students:[],evaluations:[],results:{},fav:DEFAULT_FAV.slice(),affichage:'note20',echelle:4};
 const ui = {tab:'classes',classId:null,evalId:null,stuIdx:0,open:null,ficheId:null,newEval:false,import:false};
 try{Object.assign(ui,JSON.parse(localStorage.getItem('notesgeo-ui')||'{}'),{newEval:false,import:false,ficheId:null})}catch(e){}
 function saveUi(){try{localStorage.setItem('notesgeo-ui',JSON.stringify({tab:ui.tab,classId:ui.classId,evalId:ui.evalId,stuIdx:ui.stuIdx}))}catch(e){}}
@@ -432,23 +496,34 @@ const evalsOf = cid=> S.evaluations.filter(e=>e.class_id===cid).sort((a,b)=>(b.d
 const curEval = ()=> S.evaluations.find(e=>e.id===ui.evalId)||null;
 const actOf = id=> ACTS.find(a=>a.id===id);
 function resOf(ev,st){const id=ev.id+'_'+st.id;return S.results[id]||{id,evaluation_id:ev.id,student_id:st.id,niveaux:{},statut:null,commentaire:'',note_manuelle:null,photos:{}}}
-/* Lignes de la grille : compétences du référentiel ou questions personnelles (anciens « coef » acceptés) */
+/* Lignes de la grille : compétences du référentiel ou questions, avec critères notés facultatifs */
 function itemsOf(ev){
-  return (ev.comps||[]).map((c,i)=>({id:c.id||c.code, comp:c.code||null, q:!!c.texte, n:i+1,
-    texte:c.texte||(c.code&&COMPS[c.code]?COMPS[c.code][0]:''), poids:Math.max(0,+(c.poids??c.coef??1)||0)}));
+  return (ev.comps||[]).map((c,i)=>{
+    const crits=(c.crits||[]).map((x,k)=>({key:(c.id||c.code)+'.'+k,t:x.t,pts:Math.max(0,+x.pts||0)}));
+    const sum=crits.reduce((a,b)=>a+b.pts,0);
+    return {id:c.id||c.code, comp:c.code||null, q:!!c.texte, n:i+1, crits,
+      texte:c.texte||(c.code&&COMPS[c.code]?COMPS[c.code][0]:''),
+      poids:Math.max(0,+(c.poids??c.coef??(sum||1))||0)};
+  });
 }
 const itemLabel = it=> it.q ? 'Q'+it.n : it.id;
 const pctOf = (it,items)=>{const t=items.reduce((a,b)=>a+b.poids,0);return t?Math.round(it.poids/t*1000)/10:0};
 const equalW = items=> items.every(i=>Math.abs(i.poids-items[0].poids)<=0.5);
-/* Résultat : ratio de 0 à 1 (note_manuelle est gardée sur 20) */
-function score(ev,r){
-  if(r.statut) return {ratio:null,calc:null,n:0};
-  let s=0,m=0,n=0;
-  for(const it of itemsOf(ev)){const v=r.niveaux?.[it.id];if(v==null)continue;n++;s+=v/3*it.poids;m+=it.poids}
-  const calc=m?s/m:null;
-  return {ratio:r.note_manuelle!=null?r.note_manuelle/20:calc, calc, n};
+const ptsTxt = x=>{const v=String(Math.round(x*100)/100).replace('.',',');return v+' pt'+(x>1?'s':'')};
+/* Réussite d'une ligne (0 à 1) : moyenne pondérée de ses critères, sinon son niveau */
+function itemRatio(it,r){
+  if(it.crits.length){let s=0,m=0;for(const c of it.crits){const v=r.niveaux?.[c.key];if(v==null)continue;s+=lvF(v)*(c.pts||1);m+=(c.pts||1)}return m?s/m:null}
+  const v=r.niveaux?.[it.id]; return v==null?null:lvF(v);
 }
-const lvlIdx = x=>Math.max(0,Math.min(3,Math.round(x*3)));
+/* Résultat global : ratio de 0 à 1 (note_manuelle est gardée sur 20) */
+function score(ev,r){
+  if(r.statut) return {ratio:null,calc:null,n:0,pts:null,max:0};
+  const items=itemsOf(ev); let s=0,m=0,n=0;
+  for(const it of items){const x=itemRatio(it,r);if(x==null)continue;n++;s+=x*it.poids;m+=it.poids}
+  const calc=m?s/m:null;
+  return {ratio:r.note_manuelle!=null?r.note_manuelle/20:calc, calc, n, pts:s, max:items.reduce((a,b)=>a+b.poids,0)};
+}
+const lvlIdx = x=>{let b=0,d=9;for(const i of lvOrder()){const e=Math.abs(LEVELS[i].f-x);if(e<d-1e-9){d=e;b=i}}return b};
 function fmtRes(x,mode){mode=mode||S.affichage;if(x==null)return '–';if(mode==='pourcent')return Math.round(x*100)+' %';if(mode==='niveau')return LEVELS[lvlIdx(x)].n;return fmt(x*20)+' /20'}
 function fmtShort(x){if(x==null)return '–';if(S.affichage==='pourcent')return Math.round(x*100)+' %';if(S.affichage==='niveau')return LEVELS[lvlIdx(x)].a;return fmt(x*20)}
 function bigHTML(x){
@@ -459,6 +534,7 @@ function bigHTML(x){
 }
 const resLabel = (r,n)=> r.statut==='absent'?'Abs.':r.statut==='non_rendu'?'N.R.':fmtShort(n.ratio);
 const photoCount = r=>Object.values(r.photos||{}).reduce((a,l)=>a+l.length,0);
+const isQEval = ev=> itemsOf(ev).some(i=>i.q);
 
 /* --- sauvegarde automatique (résultats) --- */
 const pending = new Map(); let timer=null, inflight=0, errState=false;
@@ -536,6 +612,7 @@ async function loadData(){
     S.results={}; d.results.forEach(r=>S.results[r.id]=r);
     const fav=d.settings.find(x=>x.id==='favoris'); if(fav&&Array.isArray(fav.valeur)) S.fav=fav.valeur;
     const aff=d.settings.find(x=>x.id==='affichage'); if(aff&&['note20','pourcent','niveau'].includes(aff.valeur)) S.affichage=aff.valeur;
+    const ech=d.settings.find(x=>x.id==='echelle'); if(ech&&(ech.valeur===5||ech.valeur===4)) S.echelle=ech.valeur;
   }catch(e){console.error(e);app.innerHTML=`<div class="empty">Impossible de charger les données (${esc(e.message||e)}). Vérifiez la connexion et les réglages Supabase, puis rechargez.</div>`;return}
   if(!S.classes.find(c=>c.id===ui.classId)) ui.classId=S.classes[0]?.id||null;
   if(!curEval()) ui.evalId=null;
@@ -557,6 +634,7 @@ function render(){
   else if(ui.tab==='evaluer') html = viewEvaluer();
   else if(ui.tab==='resultats') html = viewResultats();
   else html = viewRef();
+  app.classList.toggle('levels5',S.echelle===5);
   app.innerHTML = demo + html;
   setSync(); hydrateImgs(); updateTotal();
   app.querySelectorAll('[data-it-text]').forEach(t=>{t.style.height='auto';t.style.height=t.scrollHeight+'px'});
@@ -604,7 +682,10 @@ function settingsCard(){
   const cur=opts.find(o=>o[0]===S.affichage)||opts[0];
   return `<section class="card stack" style="margin-top:20px"><h2>Affichage du résultat</h2>
    <div class="seg" role="group" aria-label="Affichage du résultat">${opts.map(o=>`<button data-a="setMode" data-v="${o[0]}" aria-pressed="${S.affichage===o[0]}">${o[1]}</button>`).join('')}</div>
-   <p class="muted" style="margin:0;font-size:.9rem">${esc(cur[2])} Chaque niveau vaut une part de la ligne : Non acquis 0 %, Fragile 33 %, Satisfaisant 67 %, Très bien maîtrisé 100 %. Les lignes comptent selon leur pondération en %.</p>
+   <p class="muted" style="margin:0;font-size:.9rem">${esc(cur[2])}</p>
+   <h2 style="margin-top:8px">Échelle de niveaux</h2>
+   <div class="seg" role="group" aria-label="Échelle de niveaux"><button data-a="setEchelle" data-v="4" aria-pressed="${S.echelle!==5}">4 niveaux</button><button data-a="setEchelle" data-v="5" aria-pressed="${S.echelle===5}">5 niveaux</button></div>
+   <p class="muted" style="margin:0;font-size:.9rem">Part des points accordée : ${lvOrder().map(i=>`${LEVELS[i].n} ${Math.round(LEVELS[i].f*100)} %`).join(' · ')}. Les notes déjà saisies gardent leur valeur si vous changez d’échelle.</p>
   </section>`;
 }
 
@@ -618,8 +699,8 @@ function viewFiche(){
   const hist={}; CODES.forEach(c=>hist[c]=[]);
   rows.forEach(({ev,r})=>{
     if(r.statut) return; const by={};
-    itemsOf(ev).forEach(it=>{const v=r.niveaux?.[it.id];if(it.comp&&v!=null)(by[it.comp]=by[it.comp]||[]).push(v)});
-    Object.entries(by).forEach(([c,l])=>hist[c].push({v:Math.round(l.reduce((a,b)=>a+b,0)/l.length),t:ev.titre,d:ev.date}));
+    itemsOf(ev).forEach(it=>{const x=itemRatio(it,r);if(it.comp&&x!=null)(by[it.comp]=by[it.comp]||[]).push(x)});
+    Object.entries(by).forEach(([c,l])=>hist[c].push({v:lvlIdx(l.reduce((a,b)=>a+b,0)/l.length),t:ev.titre,d:ev.date}));
   });
   const unit=u=>{const all=u.comps.flatMap(c=>hist[c].map(h=>h.v));return all.length?all.reduce((a,b)=>a+b,0)/(3*all.length):null};
   const cls=S.classes.find(c=>c.id===s.class_id);
@@ -655,11 +736,11 @@ function viewEvaluer(){
   if(!studs.length) return `<button class="btn ghost" data-a="changeEval">← Changer d’évaluation</button><div class="empty" style="margin-top:14px">Cette classe n’a pas encore d’élèves.</div>`;
   ui.stuIdx=Math.max(0,Math.min(ui.stuIdx,studs.length-1));
   const st=studs[ui.stuIdx], r=resOf(ev,st), n=score(ev,r), act=actOf(ev.activite), cls=S.classes.find(c=>c.id===ev.class_id);
-  const items=itemsOf(ev), eq=equalW(items), pc=photoCount(r);
+  const items=itemsOf(ev), eq=equalW(items), pc=photoCount(r), qev=items.some(i=>i.q);
   let ov='';
   if(S.affichage==='note20') ov=`<label class="f" style="margin-top:8px">Ajuster la note à la main (sur 20)<input id="override" class="mono" inputmode="decimal" placeholder="vide = note calculée" value="${r.note_manuelle!=null?esc(String(r.note_manuelle).replace('.',',')):''}"></label>`;
   else if(S.affichage==='pourcent') ov=`<label class="f" style="margin-top:8px">Ajuster à la main (en %)<input id="override" class="mono" inputmode="decimal" placeholder="vide = calculé" value="${r.note_manuelle!=null?Math.round(r.note_manuelle*5):''}"></label>`;
-  else ov=`<label class="f" style="margin-top:8px">Ajuster le niveau à la main<select id="override"><option value="">Niveau calculé</option>${LEVELS.map((l,i)=>`<option value="${i}" ${r.note_manuelle!=null&&lvlIdx(r.note_manuelle/20)===i?'selected':''}>${l.n}</option>`).join('')}</select></label>`;
+  else ov=`<label class="f" style="margin-top:8px">Ajuster le niveau à la main<select id="override"><option value="">Niveau calculé</option>${lvOrder().map(i=>LEVELS[i]).map((l,j,_,i=lvOrder()[j])=>`<option value="${i}" ${r.note_manuelle!=null&&lvlIdx(r.note_manuelle/20)===i?'selected':''}>${l.n}</option>`).join('')}</select></label>`;
   const doneItems=Object.keys(r.photos||{}).filter(k=>r.photos[k].length).map(k=>{const it=items.find(i=>i.id===k);return it?itemLabel(it):k});
   return `<div class="row between" style="margin-bottom:8px">
      <button class="btn ghost" data-a="changeEval">← ${esc(ev.titre)}</button>
@@ -671,12 +752,13 @@ function viewEvaluer(){
   <div class="split">
    <div>
     ${r.statut?`<div class="banner">${r.statut==='absent'?'Élève noté absent':'Travail non rendu'} : aucun résultat n’est calculé. Touchez à nouveau le bouton pour annuler.</div>`:''}
-    ${items.map(it=>itemRow(r,it,items,eq)).join('')}
+    ${items.map(it=>itemRow(r,it,items,eq,qev)).join('')}
    </div>
    <aside class="stack">
     <div class="notebox"><span class="muted" style="font-size:.9rem">${r.note_manuelle!=null?'Résultat ajusté':'Résultat calculé'}</span>
       <span class="big" id="bignote">${r.statut==='absent'?'Abs.':r.statut==='non_rendu'?'N.R.':bigHTML(n.ratio)}</span>
       <span class="muted" style="font-size:.85rem">${n.n} / ${items.length} ligne${items.length>1?'s':''} évaluée${n.n>1?'s':''}${r.note_manuelle!=null&&n.calc!=null?' · calculé : '+fmtRes(n.calc):''}</span>
+      ${qev&&!r.statut?`<span class="muted" style="font-size:.85rem">Barème : ${String(Math.round((n.pts||0)*100)/100).replace('.',',')} / ${ptsTxt(n.max)}</span>`:''}
       ${ov}
     </div>
     <label class="f">Commentaire<textarea id="com" class="inp" rows="4">${esc(r.commentaire||'')}</textarea></label>
@@ -689,29 +771,43 @@ function viewEvaluer(){
    </aside>
   </div>`;
 }
-function itemRow(r,it,items,eq){
-  const crit=it.comp?COMPS[it.comp][1]:null; const v=r.niveaux?.[it.id]; const ph=(r.photos?.[it.id])||[]; const up=uploading[r.id+'|'+it.id]||0;
-  const open=ui.open===it.id && crit;
-  const tags=[it.q&&it.comp?`<span class="pill">${it.comp}</span>`:'', !eq?`<span class="pill">${String(pctOf(it,items)).replace('.',',')} %</span>`:''].filter(Boolean).join(' ');
-  const head=`<span class="t"><span class="code">${esc(itemLabel(it))}</span> ${esc(it.texte)}</span>${tags||crit?`<span class="row" style="gap:6px">${tags}${crit?`<span class="h">${open?'Masquer':'Voir'} les critères ${it.comp}</span>`:''}</span>`:''}`;
+function itemRow(r,it,items,eq,qev){
+  const off=it.comp&&!it.crits.length?COMPS[it.comp][1]:null;
+  const ph=(r.photos?.[it.id])||[]; const up=uploading[r.id+'|'+it.id]||0;
+  const open=ui.open===it.id && off;
+  const tags=[it.q&&it.comp?`<span class="pill">${it.comp}</span>`:'', qev?`<span class="pill">${ptsTxt(it.poids)}</span>`:(!eq?`<span class="pill">${String(pctOf(it,items)).replace('.',',')} %</span>`:'')].filter(Boolean).join(' ');
+  const head=`<span class="t"><span class="code">${esc(itemLabel(it))}</span> ${esc(it.texte)}</span>${tags||off?`<span class="row" style="gap:6px">${tags}${off?`<span class="h">${open?'Masquer':'Voir'} les critères ${it.comp}</span>`:''}</span>`:''}`;
+  const lv=(key,v)=>lvOrder().map(i=>[LEVELS[i],i]).map(([l,i])=>`<button class="lv" data-a="lvl" data-c="${esc(key)}" data-v="${i}" aria-pressed="${v===i}" ${r.statut?'disabled':''}>${l.h||esc(l.n)}</button>`).join('');
+  const cam=`<button class="cam" data-a="photo" data-c="${esc(it.id)}" aria-label="Prendre une photo pour ${esc(itemLabel(it))}${ph.length?' ('+ph.length+' déjà)':''}">${IC.cam}${ph.length?`<span class="badge">${ph.length}</span>`:''}</button>`;
+  const thumbs=ph.length||up?`<div class="thumbs">${ph.map((p,i)=>`<button class="thumb" data-a="viewPhoto" data-c="${esc(it.id)}" data-i="${i}" aria-label="Agrandir la photo ${i+1} de ${esc(itemLabel(it))}"><img data-path="${esc(p)}" alt=""></button>`).join('')}${Array.from({length:up},()=>'<div class="thumb up" aria-label="Envoi en cours"></div>').join('')}</div>`:'';
+  if(it.crits.length){
+    const x=itemRatio(it,r);
+    return `<div class="comp" id="comp-${esc(it.id)}">
+     <div class="chead"><div class="ctitle">${head}</div>${x!=null?`<span class="cell sum c${lvlIdx(x)}" title="${Math.round(x*100)} %">${LEVELS[lvlIdx(x)].a}</span>`:''}${cam}</div>
+     ${it.crits.map(c=>`<div class="cline sub"><div class="ctitle"><span class="t2">${esc(c.t)}</span><span class="h2">${ptsTxt(c.pts)}</span></div>${lv(c.key,r.niveaux?.[c.key])}<span aria-hidden="true"></span></div>`).join('')}
+     ${thumbs}
+    </div>`;
+  }
   return `<div class="comp" id="comp-${esc(it.id)}">
    <div class="cline">
-    ${crit?`<button class="ctitle" data-a="toggleCrit" data-c="${esc(it.id)}" aria-expanded="${!!open}">${head}</button>`:`<div class="ctitle">${head}</div>`}
-    ${LEVELS.map((l,i)=>`<button class="lv" data-a="lvl" data-c="${esc(it.id)}" data-v="${i}" aria-pressed="${v===i}" ${r.statut?'disabled':''}>${l.h||esc(l.n)}</button>`).join('')}
-    <button class="cam" data-a="photo" data-c="${esc(it.id)}" aria-label="Prendre une photo pour ${esc(itemLabel(it))}${ph.length?' ('+ph.length+' déjà)':''}">${IC.cam}${ph.length?`<span class="badge">${ph.length}</span>`:''}</button>
+    ${off?`<button class="ctitle" data-a="toggleCrit" data-c="${esc(it.id)}" aria-expanded="${!!open}">${head}</button>`:`<div class="ctitle">${head}</div>`}
+    ${lv(it.id,r.niveaux?.[it.id])}
+    ${cam}
    </div>
-   ${open?`<ul class="crit">${crit.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
-   ${ph.length||up?`<div class="thumbs">${ph.map((p,i)=>`<button class="thumb" data-a="viewPhoto" data-c="${esc(it.id)}" data-i="${i}" aria-label="Agrandir la photo ${i+1} de ${esc(itemLabel(it))}"><img data-path="${esc(p)}" alt=""></button>`).join('')}${Array.from({length:up},()=>'<div class="thumb up" aria-label="Envoi en cours"></div>').join('')}</div>`:''}
+   ${open?`<ul class="crit">${off.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
+   ${thumbs}
   </div>`;
 }
 
 /* ---------------- NOUVELLE ÉVALUATION ---------------- */
 function splitEq(keys){const p=toPct(keys.map(()=>1));return Object.fromEntries(keys.map((k,i)=>[k,p[i]]))}
-function newDraft(){return {mode:'ref',titre:'',date:today(),type:TYPES[0],act:'1.1',ref:splitEq(ACTS[0].comps),items:[],paste:'',actAuto:false}}
+function newDraft(){return {mode:'ref',titre:'',date:today(),type:TYPES[0],act:'1.1',ref:splitEq(ACTS[0].comps),refCrit:{},refOpen:{},items:[],paste:'',actAuto:false}}
+const critSum = it=>(it.crits||[]).reduce((a,c)=>a+(c.pts==null?1:+c.pts||0),0);
+const v2 = x=>x==null||x===''?'':String(x).replace('.',',');
 function viewEvalPicker(){
   const cid=ui.classId||S.classes[0].id;
   const list=evalsOf(cid);
-  const d=ui.draft=ui.draft||newDraft();
+  const d=ui.draft=ui.draft||newDraft(); d.refCrit=d.refCrit||{}; d.refOpen=d.refOpen||{};
   const act=actOf(d.act)||ACTS[0];
   const compOpts=sel=>`<option value="">Aucune compétence</option>${CODES.map(c=>`<option value="${c}" ${c===sel?'selected':''}>${c} – ${esc(COMPS[c][0].length>48?COMPS[c][0].slice(0,46)+'…':COMPS[c][0])}</option>`).join('')}`;
   const actSel=`<label class="f">Activité professionnelle<select id="neAct">${ACTS.map(a=>`<option value="${a.id}" ${a.id===act.id?'selected':''}>Activité ${a.id} – ${esc(a.name)}</option>`).join('')}</select></label>`;
@@ -719,25 +815,43 @@ function viewEvalPicker(){
   if(d.mode==='ref'){
     body=`${actSel}
     <div class="stack" style="gap:6px"><span style="font-size:.85rem;font-weight:700;color:var(--muted)">Compétences évaluées et pondération</span>
-     ${CODES.map(c=>`<div class="row" style="gap:8px;flex-wrap:nowrap"><input type="checkbox" id="nc-${c}" data-cc="${c}" ${d.ref[c]!=null?'checked':''} style="width:22px;height:22px;flex:none"><label for="nc-${c}" style="flex:1;min-width:0;font-size:.9rem"><span class="code">${c}</span> ${esc(COMPS[c][0])}${act.comps.includes(c)?'':' <span class="muted">(hors activité)</span>'}</label><span class="pctin"><input class="inp mono" data-poids="${c}" inputmode="decimal" value="${d.ref[c]!=null?String(d.ref[c]).replace('.',','):''}" aria-label="Pondération ${c} en %" ${d.ref[c]==null?'disabled':''}><span>%</span></span></div>`).join('')}
+     ${CODES.map(c=>{
+       const on=d.ref[c]!=null, rc=d.refCrit[c]||[], nsel=rc.filter(x=>x&&x.on).length, openC=on&&d.refOpen[c];
+       return `<div class="refrow${on?' on':''}">
+        <div class="row" style="gap:8px;flex-wrap:nowrap"><input type="checkbox" id="nc-${c}" data-cc="${c}" ${on?'checked':''} style="width:22px;height:22px;flex:none"><label for="nc-${c}" style="flex:1;min-width:0;font-size:.9rem"><span class="code">${c}</span> ${esc(COMPS[c][0])}${act.comps.includes(c)?'':' <span class="muted">(hors activité)</span>'}</label><span class="pctin"><input class="inp mono" data-poids="${c}" inputmode="decimal" value="${on?v2(d.ref[c]):''}" aria-label="Pondération ${c} en %" ${on?'':'disabled'}><span>%</span></span></div>
+        ${on?`<button class="linkbtn" data-a="toggleRC" data-c="${c}" aria-expanded="${!!openC}">${openC?'Masquer':'Noter par'} les critères officiels${nsel?` · ${nsel} affiché${nsel>1?'s':''}`:''}</button>`:''}
+        ${openC?`<div class="stack" style="gap:4px;padding-left:30px">
+          <span class="muted" style="font-size:.8rem">Cochez les critères à faire apparaître dans la grille, avec leurs points. Sans critère coché, la compétence est notée d’un seul bloc.</span>
+          ${COMPS[c][1].map((t,k)=>{const x=rc[k]||{};return `<div class="row" style="gap:8px;flex-wrap:nowrap;align-items:flex-start"><input type="checkbox" id="rc-${c}-${k}" data-rc="${c}.${k}" ${x.on?'checked':''} style="width:20px;height:20px;flex:none;margin-top:6px"><label for="rc-${c}-${k}" style="flex:1;min-width:0;font-size:.85rem;line-height:1.35">${esc(t)}</label><span class="pctin"><input class="inp mono" data-rp="${c}.${k}" inputmode="decimal" value="${v2(x.pts??1)}" aria-label="Points du critère" ${x.on?'':'disabled'} style="width:58px"><span>pt</span></span></div>`}).join('')}
+        </div>`:''}
+       </div>`}).join('')}
     </div>`;
   } else {
-    body=`<label class="f">Collez vos questions ou critères, une ligne par question
-      <textarea id="nePaste" class="inp" rows="6" placeholder="1. Mettre en station le niveau (2 pts)&#10;2. Lire la mire au millimètre (4 pts)&#10;3. Calculer les dénivelées et la fermeture (4 pts)&#10;4. Porter les EPI et baliser le chantier (2 pts)">${esc(d.paste)}</textarea></label>
-    <p class="muted" style="margin:0;font-size:.82rem">Numéros et puces sont retirés automatiquement. Barème facultatif en fin de ligne : « (2 pts) », « 4 points », « 20 % » ou une colonne copiée depuis Excel.</p>
+    body=`<label class="f">Collez vos questions et leurs critères
+      <textarea id="nePaste" class="inp" rows="7" placeholder="${esc(EXEMPLE_Q)}">${esc(d.paste)}</textarea></label>
+    <div class="hint">
+      <strong>Format conseillé</strong> : une question par ligne, ses critères sur la même ligne après « Critères : », ou en dessous avec un tiret.
+      <pre>${esc(EXEMPLE_Q)}</pre>
+      Points facultatifs : « 1 pt », « (2 pts) », « 0,5 point ». Sans critères, chaque ligne devient une question notée d’un bloc.
+      <div class="row" style="margin-top:6px"><button class="btn small" data-a="exampleQ">Utiliser cet exemple</button></div>
+    </div>
     <button class="btn" data-a="parseQ">Créer la grille à partir de ce texte</button>
     ${d.items.length?`
      ${d.actAuto?`<div class="sugg">Activité proposée d’après vos questions : <strong>${act.id} – ${esc(act.name)}</strong>. Les compétences marquées « proposée » ont été devinées à partir des mots de chaque question : vérifiez-les.</div>`:''}
      ${actSel}
      <div class="stack" style="gap:8px">
-      ${d.items.map((it,i)=>`<div class="qrow">
+      ${d.items.map((it,i)=>`<div class="qcard">
+       <div class="qrow">
         <span class="qn code">Q${i+1}</span>
         <textarea class="inp qt" data-it-text="${i}" rows="1" aria-label="Texte de la question ${i+1}">${esc(it.texte)}</textarea>
         <label class="qc"><select class="inp" data-it-comp="${i}" aria-label="Compétence de la question ${i+1}">${compOpts(it.comp)}</select>${it.auto&&it.comp?'<span class="auto">proposée</span>':it.auto?'<span class="auto warn">à choisir</span>':''}</label>
-        <span class="pctin qp"><input class="inp mono" data-it-poids="${i}" inputmode="decimal" value="${String(it.poids??'').replace('.',',')}" aria-label="Pondération de la question ${i+1} en %"><span>%</span></span>
+        <span class="pctin qp"><input class="inp mono" data-it-poids="${i}" inputmode="decimal" value="${v2(it.poids)}" placeholder="${v2(it.crits?.length?critSum(it):1)}" aria-label="Points de la question ${i+1}"><span>pts</span></span>
         <button class="btn small ghost qx" data-a="delItem" data-i="${i}" aria-label="Supprimer la question ${i+1}">×</button>
+       </div>
+       ${(it.crits||[]).map((c,k)=>`<div class="crow"><span class="muted" aria-hidden="true">•</span><input class="inp" data-cr-text="${i}.${k}" value="${esc(c.t)}" aria-label="Critère ${k+1} de la question ${i+1}" placeholder="Critère"><span class="pctin"><input class="inp mono" data-cr-pts="${i}.${k}" inputmode="decimal" value="${v2(c.pts)}" placeholder="1" aria-label="Points du critère" style="width:58px"><span>pt</span></span><button class="btn small ghost" data-a="delCrit" data-i="${i}" data-k="${k}" aria-label="Supprimer ce critère">×</button></div>`).join('')}
+       <button class="linkbtn" data-a="addCrit" data-i="${i}">+ Ajouter un critère</button>
       </div>`).join('')}
-      <div class="row"><button class="btn small" data-a="addItem">+ Ajouter une ligne</button></div>
+      <div class="row"><button class="btn small" data-a="addItem">+ Ajouter une question</button></div>
      </div>`:''}`;
   }
   const showTot = d.mode==='ref' || d.items.length;
@@ -762,9 +876,20 @@ function viewEvalPicker(){
 }
 function updateTotal(){
   const el=$('#tot'); if(!el) return;
-  const ins=[...app.querySelectorAll('[data-poids]:not(:disabled),[data-it-poids]')];
+  const d=ui.draft;
+  if(d&&d.mode==='q'){
+    let t=0;
+    app.querySelectorAll('[data-it-poids]').forEach(inp=>{
+      const i=inp.dataset.itPoids; let cs=0,has=false;
+      app.querySelectorAll(`[data-cr-pts^="${i}."]`).forEach(c=>{has=true;cs+=num(c.value)??1});
+      if(has) inp.placeholder=v2(Math.round(cs*100)/100);
+      t+=num(inp.value)??(has?cs:1);
+    });
+    el.textContent=`Total : ${v2(Math.round(t*100)/100)} pts`; el.classList.remove('bad'); return;
+  }
+  const ins=[...app.querySelectorAll('[data-poids]:not(:disabled)')];
   const t=Math.round(ins.reduce((a,i)=>a+(num(i.value)||0),0)*10)/10;
-  el.textContent=`Total : ${String(t).replace('.',',')} %`+(Math.abs(t-100)>0.05?' (le résultat reste calculé en proportion)':'');
+  el.textContent=`Total : ${v2(t)} %`+(Math.abs(t-100)>0.05?' (le résultat reste calculé en proportion)':'');
   el.classList.toggle('bad',Math.abs(t-100)>0.05);
 }
 function readDraft(){
@@ -772,10 +897,15 @@ function readDraft(){
   const g=id=>$(id)?.value;
   if($('#neTitre')) d.titre=g('#neTitre'); if($('#neDate')) d.date=g('#neDate'); if($('#neType')) d.type=g('#neType');
   if($('#neAct')) d.act=g('#neAct'); if($('#nePaste')) d.paste=g('#nePaste');
-  if(d.mode==='ref' && app.querySelector('[data-cc]')){const r={};app.querySelectorAll('[data-cc]').forEach(cb=>{if(cb.checked)r[cb.dataset.cc]=num(app.querySelector(`[data-poids="${cb.dataset.cc}"]`).value)??0});d.ref=r}
+  if(d.mode==='ref' && app.querySelector('[data-cc]')){
+    const r={};app.querySelectorAll('[data-cc]').forEach(cb=>{if(cb.checked)r[cb.dataset.cc]=num(app.querySelector(`[data-poids="${cb.dataset.cc}"]`).value)??0});d.ref=r;
+    app.querySelectorAll('[data-rc]').forEach(cb=>{const [c,k]=cb.dataset.rc.split('.');const l=d.refCrit[c]=d.refCrit[c]||[];const p=app.querySelector(`[data-rp="${c}.${k}"]`);l[+k]={on:cb.checked,pts:num(p?.value)??1}});
+  }
   app.querySelectorAll('[data-it-text]').forEach(t=>{const it=d.items[+t.dataset.itText];if(it)it.texte=t.value});
   app.querySelectorAll('[data-it-comp]').forEach(t=>{const it=d.items[+t.dataset.itComp];if(it)it.comp=t.value||null});
-  app.querySelectorAll('[data-it-poids]').forEach(t=>{const it=d.items[+t.dataset.itPoids];if(it)it.poids=num(t.value)??0});
+  app.querySelectorAll('[data-it-poids]').forEach(t=>{const it=d.items[+t.dataset.itPoids];if(it)it.poids=num(t.value)});
+  app.querySelectorAll('[data-cr-text]').forEach(t=>{const [i,k]=t.dataset.crText.split('.').map(Number);const c=d.items[i]?.crits?.[k];if(c)c.t=t.value});
+  app.querySelectorAll('[data-cr-pts]').forEach(t=>{const [i,k]=t.dataset.crPts.split('.').map(Number);const c=d.items[i]?.crits?.[k];if(c)c.pts=num(t.value)});
 }
 
 /* ---------------- RÉSULTATS ---------------- */
@@ -793,17 +923,17 @@ function viewResultats(){
   const vals=data.map(d=>d.n.ratio).filter(x=>x!=null);
   const moy=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;
   const abs=data.filter(d=>d.r.statut==='absent').length, nr=data.filter(d=>d.r.statut==='non_rendu').length;
-  const alerts=items.map(it=>{const g=data.filter(d=>!d.r.statut&&d.r.niveaux?.[it.id]!=null);const low=g.filter(d=>d.r.niveaux[it.id]<=1).length;return {it,g:g.length,low}}).filter(x=>x.g&&x.low>x.g/3);
+  const alerts=items.map(it=>{const g=data.filter(d=>!d.r.statut&&itemRatio(it,d.r)!=null);const low=g.filter(d=>lvlIdx(itemRatio(it,d.r))<=1).length;return {it,g:g.length,low}}).filter(x=>x.g&&x.low>x.g/3);
   const unitHead={note20:'/20',pourcent:'%',niveau:'Niveau'}[S.affichage];
   return head+`<div class="row between" style="margin-bottom:12px"><span class="muted">${esc(ev.type||'')}${ev.activite?' · Activité '+esc(ev.activite)+' – '+esc(actOf(ev.activite)?.name||''):''}</span>
    <div class="row"><button class="btn" data-a="csv">${IC.dl}Export Pronote (CSV)</button><button class="btn primary" data-a="pdfAll">${IC.dl}Fiches PDF de la classe</button></div></div>
   <div class="split">
    <div class="stack">
    <div class="tblwrap"><table class="res"><thead><tr><th>Élève</th>${items.map(it=>`<th title="${esc(it.texte)}">${esc(itemLabel(it))}</th>`).join('')}<th>Photos</th><th style="text-align:right">${unitHead}</th></tr></thead><tbody>
-    ${data.map(({s,r,n})=>`<tr class="click" data-a="openRes" data-ev="${esc(ev.id)}" data-st="${esc(s.id)}"><td class="n">${esc(fullName(s))}</td>${items.map(it=>{const v=r.statut?null:r.niveaux?.[it.id];return `<td><div class="cell ${v!=null?'c'+v:''}">${v!=null?LEVELS[v].a:'–'}</div></td>`}).join('')}<td class="mono" style="text-align:center;color:var(--muted)">${photoCount(r)||''}</td><td class="note">${resLabel(r,n)}</td></tr>`).join('')}
+    ${data.map(({s,r,n})=>`<tr class="click" data-a="openRes" data-ev="${esc(ev.id)}" data-st="${esc(s.id)}"><td class="n">${esc(fullName(s))}</td>${items.map(it=>{const x=r.statut?null:itemRatio(it,r);const v=x==null?null:lvlIdx(x);return `<td><div class="cell ${v!=null?'c'+v:''}" ${x!=null&&it.crits.length?`title="${Math.round(x*100)} %"`:''}>${v!=null?LEVELS[v].a:'–'}</div></td>`}).join('')}<td class="mono" style="text-align:center;color:var(--muted)">${photoCount(r)||''}</td><td class="note">${resLabel(r,n)}</td></tr>`).join('')}
    </tbody></table>
-   <div class="legend">${LEVELS.map((l,i)=>`<span><i style="background:var(--l${i})"></i>${l.a} = ${l.n}</span>`).join('')}</div></div>
-   ${qmode||!eq?`<section class="card"><h2 style="font-size:1rem;margin-bottom:8px">Grille</h2><ol class="qlist">${items.map(it=>`<li><span class="code">${esc(itemLabel(it))}</span> ${esc(it.texte)} <span class="muted">${[it.q&&it.comp?it.comp:'',String(pctOf(it,items)).replace('.',',')+' %'].filter(Boolean).join(' · ')}</span></li>`).join('')}</ol></section>`:''}
+   <div class="legend">${lvOrder().map(i=>`<span><i style="background:var(--l${i})"></i>${LEVELS[i].a} = ${LEVELS[i].n}</span>`).join('')}</div></div>
+   ${qmode||!eq||items.some(i=>i.crits.length)?`<section class="card"><h2 style="font-size:1rem;margin-bottom:8px">Grille</h2><ol class="qlist">${items.map(it=>`<li><span class="code">${esc(itemLabel(it))}</span> ${esc(it.texte)} <span class="muted">${[it.q&&it.comp?it.comp:'',qmode?ptsTxt(it.poids):String(pctOf(it,items)).replace('.',',')+' %'].filter(Boolean).join(' · ')}</span>${it.crits.length?`<ul class="clist">${it.crits.map(c=>`<li>${esc(c.t)} <span class="muted">${ptsTxt(c.pts)}</span></li>`).join('')}</ul>`:''}</li>`).join('')}</ol></section>`:''}
    </div>
    <aside class="stack">
     <div class="notebox stats"><span class="muted" style="font-size:.9rem">Moyenne de la classe</span><span class="big">${bigHTML(moy)}</span>
@@ -845,6 +975,7 @@ const A = {
     ui.classId=cid; render();
   },
   async delSample(){const c=S.classes.find(x=>x.exemple);if(c){ui.classId=c.id;await A.delClass(true)}},
+  async setEchelle(t){S.echelle=+t.dataset.v;render();await save('settings',{id:'echelle',valeur:S.echelle})},
   async setMode(t){S.affichage=t.dataset.v;render();await save('settings',{id:'affichage',valeur:S.affichage})},
   pickClass(t){ui.classId=t.dataset.id;ui.import=false;render()},
   toggleImport(){ui.import=!ui.import;render()},
@@ -877,26 +1008,29 @@ const A = {
   parseQ(){
     readDraft(); const d=ui.draft; const qs=parseQuestions(d.paste);
     if(!qs.length){toast('Collez au moins une question.');$('#nePaste')?.focus();return}
-    const given=qs.filter(q=>q.w!=null).map(q=>q.w); const mean=given.length?given.reduce((a,b)=>a+b,0)/given.length:1;
-    const pp=toPct(qs.map(q=>q.w??mean));
-    d.items=qs.map((q,i)=>({texte:q.texte,comp:suggestComp(q.texte),auto:true,poids:pp[i]}));
+    d.items=qs.map(q=>({texte:q.texte,comp:suggestComp(q.texte+' '+q.crits.map(c=>c.t).join(' ')),auto:true,poids:q.w,crits:q.crits.map(c=>({t:c.t,pts:c.pts}))}));
     d.act=suggestAct(d.items); d.actAuto=true;
-    rerenderKeep(); toast(`${qs.length} question${qs.length>1?'s':''} ajoutée${qs.length>1?'s':''} à la grille`);
+    const nc=qs.reduce((s,q)=>s+q.crits.length,0);
+    rerenderKeep(); toast(`${qs.length} question${qs.length>1?'s':''}${nc?` et ${nc} critère${nc>1?'s':''}`:''} ajoutés à la grille`);
   },
-  addItem(){readDraft();ui.draft.items.push({texte:'',comp:null,auto:false,poids:0});rerenderKeep();const l=app.querySelectorAll('[data-it-text]');l[l.length-1]?.focus()},
+  exampleQ(){readDraft();ui.draft.paste=EXEMPLE_Q;rerenderKeep()},
+  addItem(){readDraft();ui.draft.items.push({texte:'',comp:null,auto:false,poids:null,crits:[]});rerenderKeep();const l=app.querySelectorAll('[data-it-text]');l[l.length-1]?.focus()},
   delItem(t){readDraft();ui.draft.items.splice(+t.dataset.i,1);rerenderKeep()},
+  addCrit(t){readDraft();const it=ui.draft.items[+t.dataset.i];(it.crits=it.crits||[]).push({t:'',pts:1});rerenderKeep();app.querySelector(`[data-cr-text="${t.dataset.i}.${it.crits.length-1}"]`)?.focus()},
+  delCrit(t){readDraft();ui.draft.items[+t.dataset.i].crits.splice(+t.dataset.k,1);rerenderKeep()},
+  toggleRC(t){readDraft();const d=ui.draft,c=t.dataset.c;d.refOpen[c]=!d.refOpen[c];if(!d.refCrit[c])d.refCrit[c]=COMPS[c][1].map(()=>({on:false,pts:1}));rerenderKeep()},
   equalW(){
     readDraft(); const d=ui.draft;
     if(d.mode==='ref') d.ref=splitEq(Object.keys(d.ref));
-    else {const pp=toPct(d.items.map(()=>1));d.items.forEach((it,i)=>it.poids=pp[i])}
+    else {const vals=d.items.map(it=>it.poids??(it.crits?.length?critSum(it):1));const avg=Math.round(vals.reduce((a,b)=>a+b,0)/(vals.length||1)*100)/100;d.items.forEach(it=>it.poids=avg)}
     rerenderKeep();
   },
   async createEval(){
     readDraft(); const d=ui.draft;
     const titre=(d.titre||'').trim(); if(!titre){toast('Donnez un titre à l’évaluation.');$('#neTitre').focus();return}
     let comps;
-    if(d.mode==='ref') comps=CODES.filter(c=>d.ref[c]!=null).map(c=>({code:c,poids:d.ref[c]||0}));
-    else comps=d.items.filter(it=>(it.texte||'').trim()).map((it,i)=>({id:'q'+(i+1),code:it.comp||null,texte:it.texte.trim(),poids:it.poids||0}));
+    if(d.mode==='ref') comps=CODES.filter(c=>d.ref[c]!=null).map(c=>{const crits=COMPS[c][1].map((t,k)=>({t,on:d.refCrit[c]?.[k]?.on,pts:d.refCrit[c]?.[k]?.pts??1})).filter(x=>x.on).map(x=>({t:x.t,pts:x.pts||0}));return crits.length?{code:c,poids:d.ref[c]||0,crits}:{code:c,poids:d.ref[c]||0}});
+    else comps=d.items.filter(it=>(it.texte||'').trim()).map((it,i)=>{const crits=(it.crits||[]).filter(c=>(c.t||'').trim()).map(c=>({t:c.t.trim(),pts:c.pts??1}));const sum=crits.reduce((a,c)=>a+(+c.pts||0),0);const o={id:'q'+(i+1),code:it.comp||null,texte:it.texte.trim(),poids:it.poids??(crits.length?sum:1)};if(crits.length)o.crits=crits;return o});
     if(!comps.length){toast(d.mode==='ref'?'Cochez au moins une compétence.':'Ajoutez au moins une question.');return}
     if(!comps.some(c=>c.poids>0)) comps.forEach(c=>c.poids=1);
     const ev={id:uid(),class_id:$('#evClass').value,titre,date:d.date||today(),type:d.type,activite:d.act||null,comps,created_at:new Date().toISOString()};
@@ -944,13 +1078,14 @@ app.addEventListener('change',e=>{
   if(t.id==='evClass'){readDraft();ui.classId=t.value;rerenderKeep()}
   else if(t.id==='neAct'){readDraft();const d=ui.draft;d.act=t.value;d.actAuto=false;if(d.mode==='ref')d.ref=splitEq(actOf(t.value).comps);rerenderKeep()}
   else if(t.dataset.cc){readDraft();ui.draft.ref=splitEq(Object.keys(ui.draft.ref));rerenderKeep()}
+  else if(t.dataset.rc){readDraft();rerenderKeep()}
   else if(t.dataset.itComp!=null){readDraft();const it=ui.draft.items[+t.dataset.itComp];if(it)it.auto=false;rerenderKeep()}
   else if(t.id==='resClass'){ui.classId=t.value;ui.evalId=evalsOf(t.value)[0]?.id||null;render()}
   else if(t.id==='resEval'){ui.evalId=t.value;render()}
   else if(t.id==='override'){
     const {r}=curCtx(); const v=t.value.trim();
     if(!v) r.note_manuelle=null;
-    else if(S.affichage==='niveau') r.note_manuelle=Math.round(+v/3*20*2)/2;
+    else if(S.affichage==='niveau') r.note_manuelle=Math.round(lvF(+v)*20*2)/2;
     else { const n=num(v), max=S.affichage==='pourcent'?100:20;
       if(n==null||n<0||n>max){toast(`Entrez une valeur entre 0 et ${max}, ou laissez vide.`);return}
       r.note_manuelle=S.affichage==='pourcent'?n/5:n; }
@@ -960,7 +1095,7 @@ app.addEventListener('change',e=>{
 app.addEventListener('input',e=>{
   const t=e.target;
   if(t.id==='com'){const {r}=curCtx();r.commentaire=t.value;putRes(r)}
-  else if(t.dataset.poids!=null||t.dataset.itPoids!=null) updateTotal();
+  else if(t.dataset.poids!=null||t.dataset.itPoids!=null||t.dataset.crPts!=null) updateTotal();
   else if(t.dataset.itText!=null){t.style.height='auto';t.style.height=t.scrollHeight+'px'}
 });
 $('#csvIn').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;let txt=await f.text();if(txt.includes('�')){const buf=await f.arrayBuffer();txt=new TextDecoder('windows-1252').decode(buf)}await addStudents(parseList(txt))});
@@ -996,8 +1131,8 @@ async function makePdf(ev,studs,btn){
   try{
     const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:'mm',format:'a4'});
     const W=210,M=14,ink=[28,43,57],mut=[90,102,114],acc=[184,65,12],blue=[47,109,181];
-    const LC=[[242,139,130],[255,204,128],[168,209,240],[59,120,194]];
-    const cls=S.classes.find(c=>c.id===ev.class_id), act=actOf(ev.activite), items=itemsOf(ev), eq=equalW(items);
+    const LC=[[242,139,130],[255,204,128],[168,209,240],[59,120,194],[255,230,138]];
+    const cls=S.classes.find(c=>c.id===ev.class_id), act=actOf(ev.activite), items=itemsOf(ev), eq=equalW(items), qev=items.some(i=>i.q);
     const T=(s,x,y,o)=>doc.text(pdfSafe(s),x,y,o);
     const urls=await urlsFor(studs.flatMap(s=>Object.values(resOf(ev,s).photos||{}).flat()));
     for(let si=0;si<studs.length;si++){
@@ -1011,17 +1146,23 @@ async function makePdf(ev,studs,btn){
       if(act){y+=5;doc.setTextColor(...mut);doc.setFontSize(9.5);T(`Activité ${ev.activite} - ${act.name} · Unité ${act.unit}`,M,y)}
       if(r.note_manuelle!=null&&n.calc!=null){y+=5;doc.setTextColor(...mut);doc.setFontSize(9.5);T(`Résultat ajusté par l'enseignant (calculé : ${fmtRes(n.calc)})`,M,y)}
       y+=8;doc.setDrawColor(...ink);doc.setLineWidth(.5);doc.line(M,y,W-M,y);y+=6;
-      doc.setFontSize(8.5);doc.setTextColor(...mut);doc.setFont('helvetica','bold');T(items.some(i=>i.q)?'Question / critère':'Compétence',M,y);if(!eq)T('Poids',W-M-54,y);T('Niveau',W-M-38,y);y+=5;
+      doc.setFontSize(8.5);doc.setTextColor(...mut);doc.setFont('helvetica','bold');T(items.some(i=>i.q)?'Question / critère':'Compétence',M,y);if(qev)T('Points',W-M-54,y); else if(!eq)T('Poids',W-M-54,y);T('Niveau',W-M-38,y);y+=5;
       for(const it of items){
-        const lines=doc.splitTextToSize(pdfSafe(`${itemLabel(it)}  ${it.texte}${it.q&&it.comp?'  ('+it.comp+')':''}`),W-2*M-64);
+        const head=`${itemLabel(it)}  ${it.texte}${it.q&&it.comp?'  ('+it.comp+')':''}`;
+        const lines=doc.splitTextToSize(pdfSafe(head),W-2*M-64);
         need(lines.length*4.6+3);
-        doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(...ink);doc.text(lines,M,y);
-        if(!eq)T(String(pctOf(it,items)).replace('.',',')+' %',W-M-54,y);
-        const v=r.statut?null:r.niveaux?.[it.id];
-        if(v!=null){doc.setFillColor(...LC[v]);doc.roundedRect(W-M-40,y-3.8,40,5.6,1.2,1.2,'F');doc.setTextColor(...(v===3?[255,255,255]:ink));doc.setFont('helvetica','bold');doc.setFontSize(9);T(LEVELS[v].n,W-M-20,y,{align:'center'})}
-        else{doc.setTextColor(...mut);T('-',W-M-20,y,{align:'center'})}
-        y+=lines.length*4.6+2.4;
+        doc.setFont('helvetica',it.crits.length?'bold':'normal');doc.setFontSize(10);doc.setTextColor(...ink);doc.text(lines,M,y);
+        if(qev)T(ptsTxt(it.poids),W-M-54,y); else if(!eq)T(String(pctOf(it,items)).replace('.',',')+' %',W-M-54,y);
+        const x=r.statut?null:itemRatio(it,r), v=x==null?null:lvlIdx(x);
+        const box=(vv,yy)=>{if(vv!=null){doc.setFillColor(...LC[vv]);doc.roundedRect(W-M-40,yy-3.8,40,5.6,1.2,1.2,'F');doc.setTextColor(...(vv===3?[255,255,255]:ink));doc.setFont('helvetica','bold');doc.setFontSize(9);T(LEVELS[vv].n,W-M-20,yy,{align:'center'})}else{doc.setTextColor(...mut);doc.setFont('helvetica','normal');T('-',W-M-20,yy,{align:'center'})}};
+        box(v,y); y+=lines.length*4.6+2.4;
+        for(const c of it.crits){
+          const cl=doc.splitTextToSize(pdfSafe('- '+c.t),W-2*M-70); need(cl.length*4.3+2);
+          doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...mut);doc.text(cl,M+6,y);T(ptsTxt(c.pts),W-M-54,y);
+          const cv=r.statut?null:r.niveaux?.[c.key]; box(cv??null,y); y+=cl.length*4.3+1.8;
+        }
       }
+      if(qev&&!r.statut){y+=1;need(6);doc.setFont('helvetica','bold');doc.setFontSize(9.5);doc.setTextColor(...ink);T(`Barème : ${String(Math.round((n.pts||0)*100)/100).replace('.',',')} / ${ptsTxt(n.max)}`,W-M,y,{align:'right'});y+=5}
       if((r.commentaire||'').trim()){y+=3;need(14);doc.setFont('helvetica','bold');doc.setFontSize(10.5);doc.setTextColor(...ink);T('Commentaire',M,y);y+=5;doc.setFont('helvetica','normal');doc.setFontSize(10);const cl=doc.splitTextToSize(pdfSafe(r.commentaire),W-2*M);need(cl.length*4.8);doc.text(cl,M,y);y+=cl.length*4.8}
       const withPh=items.filter(it=>(r.photos?.[it.id]||[]).length);
       if(withPh.length){
