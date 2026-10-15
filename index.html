@@ -80,6 +80,7 @@ textarea.inp,label.f textarea{min-height:90px;resize:vertical}
 .code{font-family:var(--f-mono);color:var(--accent);font-weight:600}
 .split{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:start}
 @media (max-width:900px){.split{grid-template-columns:1fr}}
+.split > *{min-width:0}
 
 /* classes */
 .classlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
@@ -169,6 +170,27 @@ tr.click:hover td.n{color:var(--blue)}
 .bar{height:10px;border-radius:5px;background:var(--soft);overflow:hidden}
 .bar i{display:block;height:100%;background:var(--blue)}
 
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line2);border-radius:10px;overflow:hidden;align-self:flex-start;max-width:100%}
+.seg button{min-height:44px;padding:0 14px;border:0;border-right:1px solid var(--line2);background:var(--surface);font-weight:700;color:var(--muted);font-size:.92rem}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--blue);color:#fff}
+.pctin{display:inline-flex;align-items:center;gap:4px;flex:none}
+.pctin input{width:72px;min-height:38px;padding:4px 8px;text-align:right}
+.qrow{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.qrow .qn{width:30px;padding-top:12px;flex:none}
+.qrow .qt{flex:1 1 240px;min-height:44px;resize:vertical;overflow:hidden}
+.qrow .qc{flex:1 1 180px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.qrow .qc select{min-height:44px}
+.qrow .qp{padding-top:3px}
+.qrow .qx{min-height:44px;width:44px;padding:0}
+.auto{font-size:.72rem;font-weight:700;color:#1E5B2A}
+.auto.warn{color:var(--warn-ink)}
+.sugg{background:#EDF7EE;border:1px solid #BFE0C4;color:#1E5B2A;border-radius:8px;padding:10px 12px;font-size:.88rem}
+.tot{font-size:.88rem}.tot.bad{color:var(--danger)}
+.lvtxt{font-family:var(--f-body);font-size:1.8rem;font-weight:700}
+.qlist{margin:0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:6px;font-size:.9rem}
+.split.wide{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr)}
+@media (max-width:900px){.split.wide{grid-template-columns:1fr}}
 /* overlays */
 .ov{position:fixed;inset:0;z-index:50;background:rgba(15,22,30,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .ov img{max-width:100%;max-height:72vh;border-radius:8px}
@@ -247,6 +269,72 @@ const UNITS = [
 const LEVELS = [{n:'Non acquis',a:'NA'},{n:'Fragile',a:'F'},{n:'Satisfaisant',a:'S',h:'Satis&shy;faisant'},{n:'Très bien maîtrisé',a:'TB'}];
 const TYPES = ['TP terrain','Contrôle écrit','DAO / CAO','Oral'];
 const DEFAULT_FAV = ['Bonne autonomie.','Auto-contrôles à systématiser.','Croquis peu exploitable.','Travail soigné.','Consignes de sécurité à respecter.'];
+
+/* --- Proposition automatique de compétence et d'activité (mots-clés) --- */
+const norm = s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+const KW = {
+  C01:['consigne','dossier',' dt ',' dict','concessionnaire','archive','collect','bim ','interlocuteur','prescription','identifier le site','information'],
+  C02:['materiel|3','appareil|2','instrument|2','batterie','signalisation','etalonn','check','choisir le','choix du'],
+  C03:['dechet|3','environnement|3','ecolog','eco-respons','durable|2',' tri ','recycl','impression'],
+  C04:['foncier|3','limite','propriet|2',' borne','bornage|3','parcelle|2','geofoncier|3','servitude','mitoyen'],
+  C05:['document foncier|3','dmpc|3','cadastr|2','division','proces-verbal','proces verbal','plan de bornage|3'],
+  C06:['securi|3',' epi','gilet','casque','balisage|2','risque','danger','prevention','circulation','ppsps|3','accident'],
+  C07:[' leve|2',' lever','nivellement|2','nivelle','mire|2','lecture|2','carnet','mise en station|2','station','point de detail','croquis|2','codification','visee','portee','denivel','altitude',' fil ','stadimetr|2','parallaxe|2','releve','calage','auto-controle','autocontrole','recolement'],
+  C08:['implant|4','piquet|2','chaise|2','trait de niveau|2',' axe','controle d implantation|3'],
+  C09:['georef|4','gnss|4',' gps','rtk|3','lambert|3','rattach|3','rgf','cc4','geodesi|3','canevas','point d appui|2',' ign '],
+  C10:['calcul|3','compens|3','fermeture|3','toleranc|2','ecart','traitement|2','transfert','logiciel','nuage|2','correlation','coordonnee','gisement|2','controle arithmetique|3','somme','moyenne','export','import'],
+  C11:[' plan|2','dessin|2','dao|3','cao|3','autocad|3','covadis|3','mensura|3','cartouche|2','legende','profil','rendu','livrable','echelle','mise en page'],
+  C12:['detect|4','reseau|2','radar|3','electromagnet|3','canalisation','cable','affleurant|2','emergence'],
+  C13:['marquage|4','piquetage|2','peinture','p98|3','code couleur|2','materialiser les reseaux|3'],
+  C14:['compte rendu|3','compte-rendu|3',' oral|3','expliqu|2','justifi|2','rendre compte|3','present','rapport','vocabulaire|2','communiq|2','argument','redig']
+};
+const KWP = Object.fromEntries(Object.entries(KW).map(([c,l])=>[c,l.map(k=>{const [w,p]=k.split('|');return [w,+(p||1)]})]));
+function suggestComp(t){
+  const x=' '+norm(t).replace(/[^a-z0-9%-]+/g,' ')+' ';
+  let best=null,bs=0;
+  for(const c of CODES){let s=0;for(const [k,w] of KWP[c]) if(x.includes(k)) s+=w; if(s>bs){bs=s;best=c}}
+  return best;
+}
+const ACT_KW = {'1.1':['prepar','organis'],'1.2':['foncier','bornage','cadastr','division'],'2.1':['nivellement',' leve','topographique','cheminement'],'2.2':['georef','gnss','rattach'],'2.3':['implant'],'2.4':['recolement'],'2.5':['traitement','dao','dessin'],'3.1':['reseau','detect']};
+function suggestAct(items){
+  const txt=' '+norm(items.map(i=>i.texte).join(' ')).replace(/[^a-z0-9]+/g,' ')+' ';
+  let best='1.1',bs=-1;
+  for(const a of ACTS){
+    let s=0;
+    items.forEach(i=>{if(i.comp&&!['C03','C06','C14'].includes(i.comp)&&a.comps.includes(i.comp))s+=2});
+    (ACT_KW[a.id]||[]).forEach(k=>{if(txt.includes(k))s+=3});
+    if(s>bs){bs=s;best=a.id}
+  }
+  return best;
+}
+/* Découpe un texte collé en questions / critères, avec barème facultatif en fin de ligne */
+function parseQuestions(txt){
+  const out=[];
+  for(let line of String(txt||'').split(/\r?\n/)){
+    line=line.trim(); if(!line) continue;
+    let w=null;
+    if(line.includes('\t')){
+      const cells=line.split('\t').map(s=>s.trim()).filter(Boolean);
+      const v=cells.length>1?num(cells[cells.length-1].replace(/\s*(pts?|points?|%)\s*$/i,'')):null;
+      if(v!=null){w=v;cells.pop()}
+      line=cells.join(' ');
+    }
+    const m=line.match(/[\s(\[]*(\d+(?:[.,]\d+)?)\s*(pts?|points?|%)\s*[)\]]?\s*$/i)||line.match(/\s\/\s*(\d+(?:[.,]\d+)?)\s*$/);
+    if(m&&w==null){w=num(m[1]);line=line.slice(0,m.index).trim()}
+    let prev;
+    do{prev=line;line=line.replace(/^(?:[-–—•*·▪►✓☐□]|q\s*\d+\s*[:.)\-–]?|\(?\d+(?:\.\d+)*\s*[.)°:\-–]|\(?[a-h]\s*[.)])\s*/i,'')}while(line!==prev&&line);
+    line=line.replace(/[\s:;,–-]+$/,'');
+    if(line.length<2) continue;
+    out.push({texte:line,w});
+  }
+  return out;
+}
+/* Répartit 100 % en valeurs à 0,1 près */
+function toPct(ws){
+  const t=ws.reduce((a,b)=>a+b,0)||1; const r=ws.map(w=>Math.round(w/t*1000)/10);
+  if(r.length){const d=Math.round((100-r.reduce((a,b)=>a+b,0))*10)/10;r[r.length-1]=Math.round((r[r.length-1]+d)*10)/10}
+  return r;
+}
 
 /* ======================================================================
    3. OUTILS
@@ -334,7 +422,7 @@ let B = null;
 /* ======================================================================
    5. ÉTAT
    ====================================================================== */
-const S = {classes:[],students:[],evaluations:[],results:{},fav:DEFAULT_FAV.slice()};
+const S = {classes:[],students:[],evaluations:[],results:{},fav:DEFAULT_FAV.slice(),affichage:'note20'};
 const ui = {tab:'classes',classId:null,evalId:null,stuIdx:0,open:null,ficheId:null,newEval:false,import:false};
 try{Object.assign(ui,JSON.parse(localStorage.getItem('notesgeo-ui')||'{}'),{newEval:false,import:false,ficheId:null})}catch(e){}
 function saveUi(){try{localStorage.setItem('notesgeo-ui',JSON.stringify({tab:ui.tab,classId:ui.classId,evalId:ui.evalId,stuIdx:ui.stuIdx}))}catch(e){}}
@@ -344,14 +432,32 @@ const evalsOf = cid=> S.evaluations.filter(e=>e.class_id===cid).sort((a,b)=>(b.d
 const curEval = ()=> S.evaluations.find(e=>e.id===ui.evalId)||null;
 const actOf = id=> ACTS.find(a=>a.id===id);
 function resOf(ev,st){const id=ev.id+'_'+st.id;return S.results[id]||{id,evaluation_id:ev.id,student_id:st.id,niveaux:{},statut:null,commentaire:'',note_manuelle:null,photos:{}}}
-function noteOf(ev,r){
-  if(r.statut) return {calc:null,final:null,n:0};
-  let s=0,m=0,n=0;
-  for(const c of ev.comps||[]){const v=r.niveaux?.[c.code];if(v==null)continue;n++;const k=+c.coef||1;s+=v*k;m+=3*k}
-  const calc=m?Math.round(s/m*20*2)/2:null;
-  const final=r.note_manuelle!=null?r.note_manuelle:calc;
-  return {calc,final,n};
+/* Lignes de la grille : compétences du référentiel ou questions personnelles (anciens « coef » acceptés) */
+function itemsOf(ev){
+  return (ev.comps||[]).map((c,i)=>({id:c.id||c.code, comp:c.code||null, q:!!c.texte, n:i+1,
+    texte:c.texte||(c.code&&COMPS[c.code]?COMPS[c.code][0]:''), poids:Math.max(0,+(c.poids??c.coef??1)||0)}));
 }
+const itemLabel = it=> it.q ? 'Q'+it.n : it.id;
+const pctOf = (it,items)=>{const t=items.reduce((a,b)=>a+b.poids,0);return t?Math.round(it.poids/t*1000)/10:0};
+const equalW = items=> items.every(i=>Math.abs(i.poids-items[0].poids)<=0.5);
+/* Résultat : ratio de 0 à 1 (note_manuelle est gardée sur 20) */
+function score(ev,r){
+  if(r.statut) return {ratio:null,calc:null,n:0};
+  let s=0,m=0,n=0;
+  for(const it of itemsOf(ev)){const v=r.niveaux?.[it.id];if(v==null)continue;n++;s+=v/3*it.poids;m+=it.poids}
+  const calc=m?s/m:null;
+  return {ratio:r.note_manuelle!=null?r.note_manuelle/20:calc, calc, n};
+}
+const lvlIdx = x=>Math.max(0,Math.min(3,Math.round(x*3)));
+function fmtRes(x,mode){mode=mode||S.affichage;if(x==null)return '–';if(mode==='pourcent')return Math.round(x*100)+' %';if(mode==='niveau')return LEVELS[lvlIdx(x)].n;return fmt(x*20)+' /20'}
+function fmtShort(x){if(x==null)return '–';if(S.affichage==='pourcent')return Math.round(x*100)+' %';if(S.affichage==='niveau')return LEVELS[lvlIdx(x)].a;return fmt(x*20)}
+function bigHTML(x){
+  if(x==null) return '–';
+  if(S.affichage==='pourcent') return `${Math.round(x*100)}<small> %</small>`;
+  if(S.affichage==='niveau') return `<span class="lvtxt">${LEVELS[lvlIdx(x)].n}</span><small style="display:block;font-size:.9rem;margin-top:4px">${Math.round(x*100)} % de réussite</small>`;
+  return `${fmt(x*20)}<small> /20</small>`;
+}
+const resLabel = (r,n)=> r.statut==='absent'?'Abs.':r.statut==='non_rendu'?'N.R.':fmtShort(n.ratio);
 const photoCount = r=>Object.values(r.photos||{}).reduce((a,l)=>a+l.length,0);
 
 /* --- sauvegarde automatique (résultats) --- */
@@ -429,6 +535,7 @@ async function loadData(){
     S.classes=d.classes; S.students=d.students; S.evaluations=d.evaluations;
     S.results={}; d.results.forEach(r=>S.results[r.id]=r);
     const fav=d.settings.find(x=>x.id==='favoris'); if(fav&&Array.isArray(fav.valeur)) S.fav=fav.valeur;
+    const aff=d.settings.find(x=>x.id==='affichage'); if(aff&&['note20','pourcent','niveau'].includes(aff.valeur)) S.affichage=aff.valeur;
   }catch(e){console.error(e);app.innerHTML=`<div class="empty">Impossible de charger les données (${esc(e.message||e)}). Vérifiez la connexion et les réglages Supabase, puis rechargez.</div>`;return}
   if(!S.classes.find(c=>c.id===ui.classId)) ui.classId=S.classes[0]?.id||null;
   if(!curEval()) ui.evalId=null;
@@ -451,11 +558,13 @@ function render(){
   else if(ui.tab==='resultats') html = viewResultats();
   else html = viewRef();
   app.innerHTML = demo + html;
-  setSync(); hydrateImgs();
+  setSync(); hydrateImgs(); updateTotal();
+  app.querySelectorAll('[data-it-text]').forEach(t=>{t.style.height='auto';t.style.height=t.scrollHeight+'px'});
 }
 
 /* ---------------- CLASSES ---------------- */
-function viewClasses(){
+function viewClasses(){return viewClasses0()+settingsCard()}
+function viewClasses0(){
   const cls=S.classes.slice().sort((a,b)=>(a.nom||'').localeCompare(b.nom||'','fr'));
   const c=S.classes.find(x=>x.id===ui.classId);
   const studs=c?stuOf(c.id):[];
@@ -489,15 +598,29 @@ async function addStudents(list){
   if(await save('students',rows,`${rows.length} élève${rows.length>1?'s':''} ajouté${rows.length>1?'s':''}`)){S.students.push(...rows);ui.import=false;render()}
 }
 
+/* ---------------- RÉGLAGES ---------------- */
+function settingsCard(){
+  const opts=[['note20','Note /20','Le résultat est ramené sur 20 (export Pronote direct).'],['pourcent','Pourcentage','Le résultat s’affiche en % de réussite, sans note.'],['niveau','Niveau seul','Seul le niveau global s’affiche : Non acquis, Fragile, Satisfaisant ou Très bien maîtrisé.']];
+  const cur=opts.find(o=>o[0]===S.affichage)||opts[0];
+  return `<section class="card stack" style="margin-top:20px"><h2>Affichage du résultat</h2>
+   <div class="seg" role="group" aria-label="Affichage du résultat">${opts.map(o=>`<button data-a="setMode" data-v="${o[0]}" aria-pressed="${S.affichage===o[0]}">${o[1]}</button>`).join('')}</div>
+   <p class="muted" style="margin:0;font-size:.9rem">${esc(cur[2])} Chaque niveau vaut une part de la ligne : Non acquis 0 %, Fragile 33 %, Satisfaisant 67 %, Très bien maîtrisé 100 %. Les lignes comptent selon leur pondération en %.</p>
+  </section>`;
+}
+
 /* ---------------- FICHE ÉLÈVE ---------------- */
 function viewFiche(){
   const s=S.students.find(x=>x.id===ui.ficheId); if(!s){ui.ficheId=null;return viewClasses()}
   const evs=evalsOf(s.class_id).slice().reverse();
-  const rows=evs.map(ev=>{const r=resOf(ev,s);return {ev,r,n:noteOf(ev,r)}});
-  const notes=rows.map(x=>x.n.final).filter(x=>x!=null);
-  const moy=notes.length?notes.reduce((a,b)=>a+b,0)/notes.length:null;
+  const rows=evs.map(ev=>{const r=resOf(ev,s);return {ev,r,n:score(ev,r)}});
+  const vals=rows.map(x=>x.n.ratio).filter(x=>x!=null);
+  const moy=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;
   const hist={}; CODES.forEach(c=>hist[c]=[]);
-  rows.forEach(({ev,r})=>{(ev.comps||[]).forEach(c=>{const v=r.niveaux?.[c.code];if(v!=null&&!r.statut)hist[c.code].push({v,t:ev.titre,d:ev.date})})});
+  rows.forEach(({ev,r})=>{
+    if(r.statut) return; const by={};
+    itemsOf(ev).forEach(it=>{const v=r.niveaux?.[it.id];if(it.comp&&v!=null)(by[it.comp]=by[it.comp]||[]).push(v)});
+    Object.entries(by).forEach(([c,l])=>hist[c].push({v:Math.round(l.reduce((a,b)=>a+b,0)/l.length),t:ev.titre,d:ev.date}));
+  });
   const unit=u=>{const all=u.comps.flatMap(c=>hist[c].map(h=>h.v));return all.length?all.reduce((a,b)=>a+b,0)/(3*all.length):null};
   const cls=S.classes.find(c=>c.id===s.class_id);
   return `<div class="row between" style="margin-bottom:14px"><button class="btn ghost" data-a="back">← Classe ${esc(cls?.nom||'')}</button></div>
@@ -505,8 +628,8 @@ function viewFiche(){
    <div class="stack">
     <h1>${esc(fullName(s))}</h1>
     <section class="card stack"><h2>Évaluations</h2>
-     ${rows.length?`<div class="tblwrap" style="padding:0"><table class="res"><thead><tr><th>Date</th><th>Évaluation</th><th>Activité</th><th style="text-align:right">/20</th></tr></thead><tbody>
-      ${rows.map(({ev,r,n})=>`<tr class="click" data-a="openRes" data-ev="${esc(ev.id)}" data-st="${esc(s.id)}"><td class="n mono" style="font-weight:400">${esc(frDate(ev.date))}</td><td class="n">${esc(ev.titre)}${photoCount(r)?` <span class="pill">${photoCount(r)} photo${photoCount(r)>1?'s':''}</span>`:''}</td><td>${esc(ev.activite)}</td><td class="note">${r.statut==='absent'?'Abs.':r.statut==='non_rendu'?'N.R.':fmt(n.final)}</td></tr>`).join('')}
+     ${rows.length?`<div class="tblwrap" style="padding:0"><table class="res"><thead><tr><th>Date</th><th>Évaluation</th><th>Activité</th><th style="text-align:right">Résultat</th></tr></thead><tbody>
+      ${rows.map(({ev,r,n})=>`<tr class="click" data-a="openRes" data-ev="${esc(ev.id)}" data-st="${esc(s.id)}"><td class="n mono" style="font-weight:400">${esc(frDate(ev.date))}</td><td class="n">${esc(ev.titre)}${photoCount(r)?` <span class="pill">${photoCount(r)} photo${photoCount(r)>1?'s':''}</span>`:''}</td><td>${esc(ev.activite||'')}</td><td class="note">${resLabel(r,n)}</td></tr>`).join('')}
      </tbody></table></div>`:'<p class="muted">Pas encore d’évaluation pour cette classe.</p>'}
     </section>
     <section class="card stack"><h2>Progression par compétence</h2>
@@ -514,10 +637,10 @@ function viewFiche(){
     </section>
    </div>
    <aside class="stack">
-    <div class="notebox"><span class="muted" style="font-size:.9rem">Moyenne des évaluations</span><span class="big">${fmt(moy)}<small> /20</small></span><span class="muted" style="font-size:.85rem">${notes.length} note${notes.length>1?'s':''}</span></div>
+    <div class="notebox"><span class="muted" style="font-size:.9rem">Moyenne des évaluations</span><span class="big">${bigHTML(moy)}</span><span class="muted" style="font-size:.85rem">${vals.length} évaluation${vals.length>1?'s':''} notée${vals.length>1?'s':''}</span></div>
     <section class="card stack"><h2>Bilan par unité</h2>
-     ${UNITS.map(u=>{const p=unit(u);return `<div class="stack" style="gap:4px"><div class="row between"><strong>${u.id}</strong><span class="mono">${p==null?'–':fmt(p*20)+' /20'}</span></div><span class="muted" style="font-size:.82rem">${esc(u.name)}</span><div class="bar"><i style="width:${p==null?0:Math.round(p*100)}%"></i></div></div>`}).join('')}
-     <p class="muted" style="margin:0;font-size:.8rem">Moyenne des niveaux obtenus sur les compétences de l’unité, ramenée sur 20.</p>
+     ${UNITS.map(u=>{const p=unit(u);return `<div class="stack" style="gap:4px"><div class="row between"><strong>${u.id}</strong><span class="mono">${fmtRes(p)}</span></div><span class="muted" style="font-size:.82rem">${esc(u.name)}</span><div class="bar"><i style="width:${p==null?0:Math.round(p*100)}%"></i></div></div>`}).join('')}
+     <p class="muted" style="margin:0;font-size:.8rem">Moyenne des niveaux obtenus sur les compétences de l’unité.</p>
     </section>
    </aside>
   </div>`;
@@ -531,73 +654,128 @@ function viewEvaluer(){
   const studs=stuOf(ev.class_id);
   if(!studs.length) return `<button class="btn ghost" data-a="changeEval">← Changer d’évaluation</button><div class="empty" style="margin-top:14px">Cette classe n’a pas encore d’élèves.</div>`;
   ui.stuIdx=Math.max(0,Math.min(ui.stuIdx,studs.length-1));
-  const st=studs[ui.stuIdx], r=resOf(ev,st), n=noteOf(ev,r), act=actOf(ev.activite), cls=S.classes.find(c=>c.id===ev.class_id);
-  const pc=photoCount(r);
+  const st=studs[ui.stuIdx], r=resOf(ev,st), n=score(ev,r), act=actOf(ev.activite), cls=S.classes.find(c=>c.id===ev.class_id);
+  const items=itemsOf(ev), eq=equalW(items), pc=photoCount(r);
+  let ov='';
+  if(S.affichage==='note20') ov=`<label class="f" style="margin-top:8px">Ajuster la note à la main (sur 20)<input id="override" class="mono" inputmode="decimal" placeholder="vide = note calculée" value="${r.note_manuelle!=null?esc(String(r.note_manuelle).replace('.',',')):''}"></label>`;
+  else if(S.affichage==='pourcent') ov=`<label class="f" style="margin-top:8px">Ajuster à la main (en %)<input id="override" class="mono" inputmode="decimal" placeholder="vide = calculé" value="${r.note_manuelle!=null?Math.round(r.note_manuelle*5):''}"></label>`;
+  else ov=`<label class="f" style="margin-top:8px">Ajuster le niveau à la main<select id="override"><option value="">Niveau calculé</option>${LEVELS.map((l,i)=>`<option value="${i}" ${r.note_manuelle!=null&&lvlIdx(r.note_manuelle/20)===i?'selected':''}>${l.n}</option>`).join('')}</select></label>`;
+  const doneItems=Object.keys(r.photos||{}).filter(k=>r.photos[k].length).map(k=>{const it=items.find(i=>i.id===k);return it?itemLabel(it):k});
   return `<div class="row between" style="margin-bottom:8px">
      <button class="btn ghost" data-a="changeEval">← ${esc(ev.titre)}</button>
-     <span class="muted" style="font-size:.88rem">${esc(cls?.nom||'')} · ${esc(frDate(ev.date))} · ${esc(ev.type||'')} · Activité ${esc(ev.activite)}${act?' · '+act.unit:''}</span></div>
+     <span class="muted" style="font-size:.88rem">${esc(cls?.nom||'')} · ${esc(frDate(ev.date))} · ${esc(ev.type||'')}${ev.activite?' · Activité '+esc(ev.activite):''}${act?' · '+act.unit:''}</span></div>
   <div class="who" style="margin-bottom:14px">
     <div class="nm">${esc(fullName(st))}</div>
     <div class="nav"><button data-a="prevStu" aria-label="Élève précédent" ${ui.stuIdx===0?'disabled':''}>${IC.prev}</button><span class="mono">${ui.stuIdx+1} / ${studs.length}</span><button class="next" data-a="nextStu" aria-label="Élève suivant" ${ui.stuIdx>=studs.length-1?'disabled':''}>${IC.next}</button></div>
   </div>
   <div class="split">
    <div>
-    ${r.statut?`<div class="banner">${r.statut==='absent'?'Élève noté absent':'Travail non rendu'} : aucune note n’est calculée. Touchez à nouveau le bouton pour annuler.</div>`:''}
-    ${(ev.comps||[]).map(c=>compRow(ev,st,r,c)).join('')}
+    ${r.statut?`<div class="banner">${r.statut==='absent'?'Élève noté absent':'Travail non rendu'} : aucun résultat n’est calculé. Touchez à nouveau le bouton pour annuler.</div>`:''}
+    ${items.map(it=>itemRow(r,it,items,eq)).join('')}
    </div>
    <aside class="stack">
-    <div class="notebox"><span class="muted" style="font-size:.9rem">${r.note_manuelle!=null?'Note ajustée':'Note calculée'}</span>
-      <span class="big" id="bignote">${r.statut==='absent'?'Abs.':r.statut==='non_rendu'?'N.R.':fmt(n.final)}<small> /20</small></span>
-      <span class="muted" style="font-size:.85rem">${n.n} / ${(ev.comps||[]).length} compétences évaluées${r.note_manuelle!=null&&n.calc!=null?' · calculée : '+fmt(n.calc):''}</span>
-      <label class="f" style="margin-top:8px">Ajuster la note à la main<input id="override" class="mono" inputmode="decimal" placeholder="vide = note calculée" value="${r.note_manuelle!=null?esc(String(r.note_manuelle).replace('.',',')):''}"></label>
+    <div class="notebox"><span class="muted" style="font-size:.9rem">${r.note_manuelle!=null?'Résultat ajusté':'Résultat calculé'}</span>
+      <span class="big" id="bignote">${r.statut==='absent'?'Abs.':r.statut==='non_rendu'?'N.R.':bigHTML(n.ratio)}</span>
+      <span class="muted" style="font-size:.85rem">${n.n} / ${items.length} ligne${items.length>1?'s':''} évaluée${n.n>1?'s':''}${r.note_manuelle!=null&&n.calc!=null?' · calculé : '+fmtRes(n.calc):''}</span>
+      ${ov}
     </div>
     <label class="f">Commentaire<textarea id="com" class="inp" rows="4">${esc(r.commentaire||'')}</textarea></label>
     <div class="chips">${S.fav.map((f,i)=>`<span class="chip"><button class="chip" style="border:0;min-height:auto;padding:0" data-a="addFav" data-i="${i}">+ ${esc(f)}</button><button class="x" data-a="delFav" data-i="${i}" aria-label="Retirer ce commentaire favori">×</button></span>`).join('')}</div>
     <button class="btn small ghost" data-a="saveFav" style="align-self:flex-start">☆ Garder ce commentaire en favori</button>
     <div class="row"><button class="btn toggle" style="flex:1" data-a="statut" data-v="absent" aria-pressed="${r.statut==='absent'}">Absent</button><button class="btn toggle" style="flex:1" data-a="statut" data-v="non_rendu" aria-pressed="${r.statut==='non_rendu'}">Non rendu</button></div>
-    <div class="card stack" style="padding:12px 14px;gap:4px"><strong style="font-size:.9rem">Photos de terrain</strong><span class="muted" style="font-size:.85rem">${pc?`${pc} photo${pc>1?'s':''} sur ${Object.keys(r.photos||{}).filter(k=>r.photos[k].length).join(', ')}. Elles figurent dans la fiche PDF.`:'Touchez l’appareil photo d’une compétence pour joindre une preuve prise sur le terrain.'}</span></div>
+    <div class="card stack" style="padding:12px 14px;gap:4px"><strong style="font-size:.9rem">Photos de terrain</strong><span class="muted" style="font-size:.85rem">${pc?`${pc} photo${pc>1?'s':''} sur ${doneItems.join(', ')}. Elles figurent dans la fiche PDF.`:'Touchez l’appareil photo d’une ligne pour joindre une preuve prise sur le terrain.'}</span></div>
     <button class="btn" data-a="pdfOne">${IC.dl}Fiche PDF de l’élève</button>
     <span class="savestate" id="savest">Enregistré automatiquement</span>
    </aside>
   </div>`;
 }
-function compRow(ev,st,r,c){
-  const [name,crit]=COMPS[c.code]; const v=r.niveaux?.[c.code]; const ph=(r.photos?.[c.code])||[]; const up=uploading[r.id+'|'+c.code]||0;
-  const open=ui.open===c.code;
-  return `<div class="comp" id="comp-${c.code}">
+function itemRow(r,it,items,eq){
+  const crit=it.comp?COMPS[it.comp][1]:null; const v=r.niveaux?.[it.id]; const ph=(r.photos?.[it.id])||[]; const up=uploading[r.id+'|'+it.id]||0;
+  const open=ui.open===it.id && crit;
+  const tags=[it.q&&it.comp?`<span class="pill">${it.comp}</span>`:'', !eq?`<span class="pill">${String(pctOf(it,items)).replace('.',',')} %</span>`:''].filter(Boolean).join(' ');
+  const head=`<span class="t"><span class="code">${esc(itemLabel(it))}</span> ${esc(it.texte)}</span>${tags||crit?`<span class="row" style="gap:6px">${tags}${crit?`<span class="h">${open?'Masquer':'Voir'} les critères ${it.comp}</span>`:''}</span>`:''}`;
+  return `<div class="comp" id="comp-${esc(it.id)}">
    <div class="cline">
-    <button class="ctitle" data-a="toggleCrit" data-c="${c.code}" aria-expanded="${open}"><span class="t"><span class="code">${c.code}</span> ${esc(name)}${(+c.coef||1)!==1?` <span class="pill">coef ${esc(c.coef)}</span>`:''}</span><span class="h">${open?'Masquer':'Voir'} les ${crit.length} critères</span></button>
-    ${LEVELS.map((l,i)=>`<button class="lv" data-a="lvl" data-c="${c.code}" data-v="${i}" aria-pressed="${v===i}" ${r.statut?'disabled':''}>${l.h||esc(l.n)}</button>`).join('')}
-    <button class="cam" data-a="photo" data-c="${c.code}" aria-label="Prendre une photo pour ${c.code}${ph.length?' ('+ph.length+' déjà)':''}">${IC.cam}${ph.length?`<span class="badge">${ph.length}</span>`:''}</button>
+    ${crit?`<button class="ctitle" data-a="toggleCrit" data-c="${esc(it.id)}" aria-expanded="${!!open}">${head}</button>`:`<div class="ctitle">${head}</div>`}
+    ${LEVELS.map((l,i)=>`<button class="lv" data-a="lvl" data-c="${esc(it.id)}" data-v="${i}" aria-pressed="${v===i}" ${r.statut?'disabled':''}>${l.h||esc(l.n)}</button>`).join('')}
+    <button class="cam" data-a="photo" data-c="${esc(it.id)}" aria-label="Prendre une photo pour ${esc(itemLabel(it))}${ph.length?' ('+ph.length+' déjà)':''}">${IC.cam}${ph.length?`<span class="badge">${ph.length}</span>`:''}</button>
    </div>
    ${open?`<ul class="crit">${crit.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
-   ${ph.length||up?`<div class="thumbs">${ph.map((p,i)=>`<button class="thumb" data-a="viewPhoto" data-c="${c.code}" data-i="${i}" aria-label="Agrandir la photo ${i+1} de ${c.code}"><img data-path="${esc(p)}" alt=""></button>`).join('')}${Array.from({length:up},()=>'<div class="thumb up" aria-label="Envoi en cours"></div>').join('')}</div>`:''}
+   ${ph.length||up?`<div class="thumbs">${ph.map((p,i)=>`<button class="thumb" data-a="viewPhoto" data-c="${esc(it.id)}" data-i="${i}" aria-label="Agrandir la photo ${i+1} de ${esc(itemLabel(it))}"><img data-path="${esc(p)}" alt=""></button>`).join('')}${Array.from({length:up},()=>'<div class="thumb up" aria-label="Envoi en cours"></div>').join('')}</div>`:''}
   </div>`;
 }
+
+/* ---------------- NOUVELLE ÉVALUATION ---------------- */
+function splitEq(keys){const p=toPct(keys.map(()=>1));return Object.fromEntries(keys.map((k,i)=>[k,p[i]]))}
+function newDraft(){return {mode:'ref',titre:'',date:today(),type:TYPES[0],act:'1.1',ref:splitEq(ACTS[0].comps),items:[],paste:'',actAuto:false}}
 function viewEvalPicker(){
   const cid=ui.classId||S.classes[0].id;
   const list=evalsOf(cid);
-  const act=actOf(ui.draftAct||'1.1');
-  const sel=ui.draftComps||Object.fromEntries(act.comps.map(c=>[c,1]));
+  const d=ui.draft=ui.draft||newDraft();
+  const act=actOf(d.act)||ACTS[0];
+  const compOpts=sel=>`<option value="">Aucune compétence</option>${CODES.map(c=>`<option value="${c}" ${c===sel?'selected':''}>${c} – ${esc(COMPS[c][0].length>48?COMPS[c][0].slice(0,46)+'…':COMPS[c][0])}</option>`).join('')}`;
+  const actSel=`<label class="f">Activité professionnelle<select id="neAct">${ACTS.map(a=>`<option value="${a.id}" ${a.id===act.id?'selected':''}>Activité ${a.id} – ${esc(a.name)}</option>`).join('')}</select></label>`;
+  let body='';
+  if(d.mode==='ref'){
+    body=`${actSel}
+    <div class="stack" style="gap:6px"><span style="font-size:.85rem;font-weight:700;color:var(--muted)">Compétences évaluées et pondération</span>
+     ${CODES.map(c=>`<div class="row" style="gap:8px;flex-wrap:nowrap"><input type="checkbox" id="nc-${c}" data-cc="${c}" ${d.ref[c]!=null?'checked':''} style="width:22px;height:22px;flex:none"><label for="nc-${c}" style="flex:1;min-width:0;font-size:.9rem"><span class="code">${c}</span> ${esc(COMPS[c][0])}${act.comps.includes(c)?'':' <span class="muted">(hors activité)</span>'}</label><span class="pctin"><input class="inp mono" data-poids="${c}" inputmode="decimal" value="${d.ref[c]!=null?String(d.ref[c]).replace('.',','):''}" aria-label="Pondération ${c} en %" ${d.ref[c]==null?'disabled':''}><span>%</span></span></div>`).join('')}
+    </div>`;
+  } else {
+    body=`<label class="f">Collez vos questions ou critères, une ligne par question
+      <textarea id="nePaste" class="inp" rows="6" placeholder="1. Mettre en station le niveau (2 pts)&#10;2. Lire la mire au millimètre (4 pts)&#10;3. Calculer les dénivelées et la fermeture (4 pts)&#10;4. Porter les EPI et baliser le chantier (2 pts)">${esc(d.paste)}</textarea></label>
+    <p class="muted" style="margin:0;font-size:.82rem">Numéros et puces sont retirés automatiquement. Barème facultatif en fin de ligne : « (2 pts) », « 4 points », « 20 % » ou une colonne copiée depuis Excel.</p>
+    <button class="btn" data-a="parseQ">Créer la grille à partir de ce texte</button>
+    ${d.items.length?`
+     ${d.actAuto?`<div class="sugg">Activité proposée d’après vos questions : <strong>${act.id} – ${esc(act.name)}</strong>. Les compétences marquées « proposée » ont été devinées à partir des mots de chaque question : vérifiez-les.</div>`:''}
+     ${actSel}
+     <div class="stack" style="gap:8px">
+      ${d.items.map((it,i)=>`<div class="qrow">
+        <span class="qn code">Q${i+1}</span>
+        <textarea class="inp qt" data-it-text="${i}" rows="1" aria-label="Texte de la question ${i+1}">${esc(it.texte)}</textarea>
+        <label class="qc"><select class="inp" data-it-comp="${i}" aria-label="Compétence de la question ${i+1}">${compOpts(it.comp)}</select>${it.auto&&it.comp?'<span class="auto">proposée</span>':it.auto?'<span class="auto warn">à choisir</span>':''}</label>
+        <span class="pctin qp"><input class="inp mono" data-it-poids="${i}" inputmode="decimal" value="${String(it.poids??'').replace('.',',')}" aria-label="Pondération de la question ${i+1} en %"><span>%</span></span>
+        <button class="btn small ghost qx" data-a="delItem" data-i="${i}" aria-label="Supprimer la question ${i+1}">×</button>
+      </div>`).join('')}
+      <div class="row"><button class="btn small" data-a="addItem">+ Ajouter une ligne</button></div>
+     </div>`:''}`;
+  }
+  const showTot = d.mode==='ref' || d.items.length;
   return `<h1>Évaluer</h1>
   <div class="row" style="margin:14px 0"><label class="f" style="flex:1;min-width:220px">Classe<select id="evClass" class="inp">${S.classes.map(c=>`<option value="${esc(c.id)}" ${c.id===cid?'selected':''}>${esc(c.nom)}</option>`).join('')}</select></label></div>
-  <div class="split">
+  <div class="split wide">
    <section class="stack">
     <h2>Reprendre une évaluation</h2>
-    ${list.length?list.map(e=>{const studs=stuOf(cid);const done=studs.filter(s=>{const r=resOf(e,s);return r.statut||noteOf(e,r).n}).length;return `<button class="classcard" data-a="openEval" data-id="${esc(e.id)}" style="min-height:auto"><b>${esc(e.titre)}</b><span class="muted">${esc(frDate(e.date))} · ${esc(e.type||'')} · Activité ${esc(e.activite)} · ${done}/${studs.length} élèves notés</span></button>`}).join(''):'<div class="empty">Aucune évaluation pour cette classe. Créez la première à droite.</div>'}
+    ${list.length?list.map(e=>{const studs=stuOf(cid);const done=studs.filter(s=>{const r=resOf(e,s);return r.statut||score(e,r).n}).length;return `<button class="classcard" data-a="openEval" data-id="${esc(e.id)}" style="min-height:auto"><b>${esc(e.titre)}</b><span class="muted">${esc(frDate(e.date))} · ${esc(e.type||'')}${e.activite?' · Activité '+esc(e.activite):''} · ${done}/${studs.length} élèves notés</span></button>`}).join(''):'<div class="empty">Aucune évaluation pour cette classe. Créez la première ici.</div>'}
    </section>
    <section class="card stack">
     <h2>Nouvelle évaluation</h2>
-    <label class="f">Titre<input id="neTitre" placeholder="TP nivellement direct" value="${esc(ui.draftTitre||'')}"></label>
-    <div class="grid2"><label class="f">Date<input id="neDate" type="date" value="${esc(ui.draftDate||today())}"></label>
-    <label class="f">Type<select id="neType">${TYPES.map(t=>`<option ${t===(ui.draftType||TYPES[0])?'selected':''}>${t}</option>`).join('')}</select></label></div>
-    <label class="f">Activité professionnelle<select id="neAct">${ACTS.map(a=>`<option value="${a.id}" ${a.id===act.id?'selected':''}>Activité ${a.id} – ${esc(a.name)}</option>`).join('')}</select></label>
-    <div class="stack" style="gap:6px"><span style="font-size:.85rem;font-weight:700;color:var(--muted)">Compétences évaluées et coefficients</span>
-     ${CODES.map(c=>`<div class="row" style="gap:8px;flex-wrap:nowrap"><input type="checkbox" id="nc-${c}" data-cc="${c}" ${sel[c]!=null?'checked':''} style="width:22px;height:22px;flex:none"><label for="nc-${c}" style="flex:1;min-width:0;font-size:.9rem"><span class="code">${c}</span> ${esc(COMPS[c][0])}${act.comps.includes(c)?'':' <span class="muted">(hors activité)</span>'}</label><input class="inp mono" data-coef="${c}" inputmode="decimal" value="${esc(sel[c]??1)}" aria-label="Coefficient ${c}" style="width:64px;min-height:38px;padding:4px 8px" ${sel[c]==null?'disabled':''}></div>`).join('')}
-    </div>
+    <label class="f">Titre<input id="neTitre" placeholder="TP nivellement direct" value="${esc(d.titre)}"></label>
+    <div class="grid2"><label class="f">Date<input id="neDate" type="date" value="${esc(d.date)}"></label>
+    <label class="f">Type<select id="neType">${TYPES.map(t=>`<option ${t===d.type?'selected':''}>${t}</option>`).join('')}</select></label></div>
+    <div class="seg" role="group" aria-label="Contenu de la grille"><button data-a="draftMode" data-v="ref" aria-pressed="${d.mode==='ref'}">Compétences du référentiel</button><button data-a="draftMode" data-v="q" aria-pressed="${d.mode==='q'}">Mes questions / critères</button></div>
+    ${body}
+    ${showTot?`<div class="row between"><span id="tot" class="tot mono"></span><button class="btn small ghost" data-a="equalW">Répartir également</button></div>`:''}
     <button class="btn primary" data-a="createEval">Créer et commencer à noter</button>
    </section>
   </div>`;
+}
+function updateTotal(){
+  const el=$('#tot'); if(!el) return;
+  const ins=[...app.querySelectorAll('[data-poids]:not(:disabled),[data-it-poids]')];
+  const t=Math.round(ins.reduce((a,i)=>a+(num(i.value)||0),0)*10)/10;
+  el.textContent=`Total : ${String(t).replace('.',',')} %`+(Math.abs(t-100)>0.05?' (le résultat reste calculé en proportion)':'');
+  el.classList.toggle('bad',Math.abs(t-100)>0.05);
+}
+function readDraft(){
+  const d=ui.draft; if(!d) return;
+  const g=id=>$(id)?.value;
+  if($('#neTitre')) d.titre=g('#neTitre'); if($('#neDate')) d.date=g('#neDate'); if($('#neType')) d.type=g('#neType');
+  if($('#neAct')) d.act=g('#neAct'); if($('#nePaste')) d.paste=g('#nePaste');
+  if(d.mode==='ref' && app.querySelector('[data-cc]')){const r={};app.querySelectorAll('[data-cc]').forEach(cb=>{if(cb.checked)r[cb.dataset.cc]=num(app.querySelector(`[data-poids="${cb.dataset.cc}"]`).value)??0});d.ref=r}
+  app.querySelectorAll('[data-it-text]').forEach(t=>{const it=d.items[+t.dataset.itText];if(it)it.texte=t.value});
+  app.querySelectorAll('[data-it-comp]').forEach(t=>{const it=d.items[+t.dataset.itComp];if(it)it.comp=t.value||null});
+  app.querySelectorAll('[data-it-poids]').forEach(t=>{const it=d.items[+t.dataset.itPoids];if(it)it.poids=num(t.value)??0});
 }
 
 /* ---------------- RÉSULTATS ---------------- */
@@ -610,24 +788,28 @@ function viewResultats(){
     <label class="f" style="flex:1;min-width:200px">Classe<select id="resClass" class="inp">${S.classes.map(c=>`<option value="${esc(c.id)}" ${c.id===cid?'selected':''}>${esc(c.nom)}</option>`).join('')}</select></label>
     <label class="f" style="flex:2;min-width:240px">Évaluation<select id="resEval" class="inp">${list.map(e=>`<option value="${esc(e.id)}" ${ev&&e.id===ev.id?'selected':''}>${esc(frDate(e.date))} · ${esc(e.titre)}</option>`).join('')||'<option>Aucune évaluation</option>'}</select></label></div>`;
   if(!ev) return head+'<div class="empty">Aucune évaluation pour cette classe.</div>';
-  const studs=stuOf(cid), comps=ev.comps||[];
-  const data=studs.map(s=>{const r=resOf(ev,s);return {s,r,n:noteOf(ev,r)}});
-  const notes=data.map(d=>d.n.final).filter(x=>x!=null);
-  const moy=notes.length?notes.reduce((a,b)=>a+b,0)/notes.length:null;
+  const studs=stuOf(cid), items=itemsOf(ev), eq=equalW(items), qmode=items.some(i=>i.q);
+  const data=studs.map(s=>{const r=resOf(ev,s);return {s,r,n:score(ev,r)}});
+  const vals=data.map(d=>d.n.ratio).filter(x=>x!=null);
+  const moy=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;
   const abs=data.filter(d=>d.r.statut==='absent').length, nr=data.filter(d=>d.r.statut==='non_rendu').length;
-  const alerts=comps.map(c=>{const g=data.filter(d=>!d.r.statut&&d.r.niveaux?.[c.code]!=null);const low=g.filter(d=>d.r.niveaux[c.code]<=1).length;return {c,g:g.length,low}}).filter(x=>x.g&&x.low>x.g/3);
-  return head+`<div class="row between" style="margin-bottom:12px"><span class="muted">${esc(ev.type||'')} · Activité ${esc(ev.activite)} – ${esc(actOf(ev.activite)?.name||'')}</span>
+  const alerts=items.map(it=>{const g=data.filter(d=>!d.r.statut&&d.r.niveaux?.[it.id]!=null);const low=g.filter(d=>d.r.niveaux[it.id]<=1).length;return {it,g:g.length,low}}).filter(x=>x.g&&x.low>x.g/3);
+  const unitHead={note20:'/20',pourcent:'%',niveau:'Niveau'}[S.affichage];
+  return head+`<div class="row between" style="margin-bottom:12px"><span class="muted">${esc(ev.type||'')}${ev.activite?' · Activité '+esc(ev.activite)+' – '+esc(actOf(ev.activite)?.name||''):''}</span>
    <div class="row"><button class="btn" data-a="csv">${IC.dl}Export Pronote (CSV)</button><button class="btn primary" data-a="pdfAll">${IC.dl}Fiches PDF de la classe</button></div></div>
   <div class="split">
-   <div class="tblwrap"><table class="res"><thead><tr><th>Élève</th>${comps.map(c=>`<th title="${esc(COMPS[c.code][0])}">${c.code}</th>`).join('')}<th>Photos</th><th style="text-align:right">/20</th></tr></thead><tbody>
-    ${data.map(({s,r,n})=>`<tr class="click" data-a="openRes" data-ev="${esc(ev.id)}" data-st="${esc(s.id)}"><td class="n">${esc(fullName(s))}</td>${comps.map(c=>{const v=r.statut?null:r.niveaux?.[c.code];return `<td><div class="cell ${v!=null?'c'+v:''}">${v!=null?LEVELS[v].a:'–'}</div></td>`}).join('')}<td class="mono" style="text-align:center;color:var(--muted)">${photoCount(r)||''}</td><td class="note">${r.statut==='absent'?'Abs.':r.statut==='non_rendu'?'N.R.':fmt(n.final)}</td></tr>`).join('')}
+   <div class="stack">
+   <div class="tblwrap"><table class="res"><thead><tr><th>Élève</th>${items.map(it=>`<th title="${esc(it.texte)}">${esc(itemLabel(it))}</th>`).join('')}<th>Photos</th><th style="text-align:right">${unitHead}</th></tr></thead><tbody>
+    ${data.map(({s,r,n})=>`<tr class="click" data-a="openRes" data-ev="${esc(ev.id)}" data-st="${esc(s.id)}"><td class="n">${esc(fullName(s))}</td>${items.map(it=>{const v=r.statut?null:r.niveaux?.[it.id];return `<td><div class="cell ${v!=null?'c'+v:''}">${v!=null?LEVELS[v].a:'–'}</div></td>`}).join('')}<td class="mono" style="text-align:center;color:var(--muted)">${photoCount(r)||''}</td><td class="note">${resLabel(r,n)}</td></tr>`).join('')}
    </tbody></table>
    <div class="legend">${LEVELS.map((l,i)=>`<span><i style="background:var(--l${i})"></i>${l.a} = ${l.n}</span>`).join('')}</div></div>
+   ${qmode||!eq?`<section class="card"><h2 style="font-size:1rem;margin-bottom:8px">Grille</h2><ol class="qlist">${items.map(it=>`<li><span class="code">${esc(itemLabel(it))}</span> ${esc(it.texte)} <span class="muted">${[it.q&&it.comp?it.comp:'',String(pctOf(it,items)).replace('.',',')+' %'].filter(Boolean).join(' · ')}</span></li>`).join('')}</ol></section>`:''}
+   </div>
    <aside class="stack">
-    <div class="notebox stats"><span class="muted" style="font-size:.9rem">Moyenne de la classe</span><span class="big">${fmt(moy)}</span>
-     <div class="grid2" style="gap:8px;margin-top:6px"><div><span class="muted" style="font-size:.85rem">Min</span><div class="mono" style="font-size:1.4rem">${notes.length?fmt(Math.min(...notes)):'–'}</div></div><div><span class="muted" style="font-size:.85rem">Max</span><div class="mono" style="font-size:1.4rem">${notes.length?fmt(Math.max(...notes)):'–'}</div></div></div>
-     <span class="muted" style="font-size:.85rem">${notes.length} noté${notes.length>1?'s':''}${abs?` · ${abs} absent${abs>1?'s':''}`:''}${nr?` · ${nr} non rendu${nr>1?'s':''}`:''}</span></div>
-    ${alerts.length?`<div class="alert"><strong>À retravailler</strong>${alerts.map(a=>`<span><span class="code">${a.c.code}</span> ${esc(COMPS[a.c.code][0])} : ${a.low} élève${a.low>1?'s':''} sur ${a.g} en Non acquis ou Fragile</span>`).join('')}</div>`:''}
+    <div class="notebox stats"><span class="muted" style="font-size:.9rem">Moyenne de la classe</span><span class="big">${bigHTML(moy)}</span>
+     <div class="grid2" style="gap:8px;margin-top:6px"><div><span class="muted" style="font-size:.85rem">Min</span><div class="mono" style="font-size:1.3rem">${vals.length?fmtShort(Math.min(...vals)):'–'}</div></div><div><span class="muted" style="font-size:.85rem">Max</span><div class="mono" style="font-size:1.3rem">${vals.length?fmtShort(Math.max(...vals)):'–'}</div></div></div>
+     <span class="muted" style="font-size:.85rem">${vals.length} noté${vals.length>1?'s':''}${abs?` · ${abs} absent${abs>1?'s':''}`:''}${nr?` · ${nr} non rendu${nr>1?'s':''}`:''}</span></div>
+    ${alerts.length?`<div class="alert"><strong>À retravailler</strong>${alerts.map(a=>`<span><span class="code">${esc(itemLabel(a.it))}</span> ${esc(a.it.texte)} : ${a.low} élève${a.low>1?'s':''} sur ${a.g} en Non acquis ou Fragile</span>`).join('')}</div>`:''}
    </aside>
   </div>`;
 }
@@ -648,24 +830,22 @@ function viewRef(){
 let photoCtx=null; const uploading={};
 function curCtx(){const ev=curEval();const studs=stuOf(ev.class_id);const st=studs[ui.stuIdx];return {ev,st,r:structuredClone(resOf(ev,st))}}
 function rerenderKeep(){const y=window.scrollY;render();window.scrollTo(0,y)}
-function readDraft(){
-  ui.draftTitre=$('#neTitre')?.value; ui.draftDate=$('#neDate')?.value; ui.draftType=$('#neType')?.value;
-  const d={}; app.querySelectorAll('[data-cc]').forEach(cb=>{if(cb.checked){d[cb.dataset.cc]=num(app.querySelector(`[data-coef="${cb.dataset.cc}"]`).value)||1}}); ui.draftComps=d;
-}
 
 const A = {
   async sample(){
     const cid=uid(); const names=[['BERNARD','Tom'],['DUBOIS','Inès'],['MARTIN','Léa'],['MOREAU','Hugo'],['PETIT','Sarah'],['ROUX','Nathan']];
     const studs=names.map(([n,p])=>({id:uid(),class_id:cid,nom:n,prenom:p}));
-    const ev={id:uid(),class_id:cid,titre:'Préparation d’un levé (exemple)',date:today(),type:'TP terrain',activite:'1.1',comps:ACTS[0].comps.map(c=>({code:c,coef:1})),created_at:new Date().toISOString()};
+    const codes=ACTS[0].comps; const pp=toPct(codes.map(()=>1));
+    const ev={id:uid(),class_id:cid,titre:'Préparation d’un levé (exemple)',date:today(),type:'TP terrain',activite:'1.1',comps:codes.map((c,i)=>({code:c,poids:pp[i]})),created_at:new Date().toISOString()};
     const L=[[2,2,1,2,2,2],[3,3,2,3,3,3],[3,2,1,2,3,2],[1,1,0,1,2,1],[2,2,1,1,3,2],null];
-    const res=studs.map((s,i)=>({id:ev.id+'_'+s.id,evaluation_id:ev.id,student_id:s.id,niveaux:L[i]?Object.fromEntries(ev.comps.map((c,j)=>[c.code,L[i][j]])):{},statut:L[i]?null:'absent',commentaire:i===1?'Bonne autonomie.':'',note_manuelle:null,photos:{},updated_at:new Date().toISOString()}));
+    const res=studs.map((s,i)=>({id:ev.id+'_'+s.id,evaluation_id:ev.id,student_id:s.id,niveaux:L[i]?Object.fromEntries(codes.map((c,j)=>[c,L[i][j]])):{},statut:L[i]?null:'absent',commentaire:i===1?'Bonne autonomie.':'',note_manuelle:null,photos:{},updated_at:new Date().toISOString()}));
     if(!await save('classes',{id:cid,nom:'Exemple – 1re Bac Pro',exemple:true,created_at:new Date().toISOString()}))return;
     await save('students',studs); await save('evaluations',ev); await save('results',res,'Exemple chargé');
     S.classes.push({id:cid,nom:'Exemple – 1re Bac Pro',exemple:true}); S.students.push(...studs); S.evaluations.push(ev); res.forEach(r=>S.results[r.id]=r);
     ui.classId=cid; render();
   },
   async delSample(){const c=S.classes.find(x=>x.exemple);if(c){ui.classId=c.id;await A.delClass(true)}},
+  async setMode(t){S.affichage=t.dataset.v;render();await save('settings',{id:'affichage',valeur:S.affichage})},
   pickClass(t){ui.classId=t.dataset.id;ui.import=false;render()},
   toggleImport(){ui.import=!ui.import;render()},
   async doImport(){await addStudents(parseList($('#impTxt').value))},
@@ -692,15 +872,36 @@ const A = {
   back(){ui.ficheId=null;render()},
   openRes(t){flush();const ev=S.evaluations.find(e=>e.id===t.dataset.ev);ui.evalId=ev.id;ui.classId=ev.class_id;ui.stuIdx=stuOf(ev.class_id).findIndex(s=>s.id===t.dataset.st);ui.tab='evaluer';ui.ficheId=null;ui.newEval=false;ui.open=null;render();window.scrollTo(0,0)},
   openEval(t){ui.evalId=t.dataset.id;ui.stuIdx=0;ui.newEval=false;ui.open=null;render();window.scrollTo(0,0)},
-  changeEval(){flush();ui.newEval=true;ui.draftComps=null;ui.draftAct=null;ui.draftTitre='';render()},
+  changeEval(){flush();ui.newEval=true;ui.draft=newDraft();render()},
+  draftMode(t){readDraft();ui.draft.mode=t.dataset.v;rerenderKeep()},
+  parseQ(){
+    readDraft(); const d=ui.draft; const qs=parseQuestions(d.paste);
+    if(!qs.length){toast('Collez au moins une question.');$('#nePaste')?.focus();return}
+    const given=qs.filter(q=>q.w!=null).map(q=>q.w); const mean=given.length?given.reduce((a,b)=>a+b,0)/given.length:1;
+    const pp=toPct(qs.map(q=>q.w??mean));
+    d.items=qs.map((q,i)=>({texte:q.texte,comp:suggestComp(q.texte),auto:true,poids:pp[i]}));
+    d.act=suggestAct(d.items); d.actAuto=true;
+    rerenderKeep(); toast(`${qs.length} question${qs.length>1?'s':''} ajoutée${qs.length>1?'s':''} à la grille`);
+  },
+  addItem(){readDraft();ui.draft.items.push({texte:'',comp:null,auto:false,poids:0});rerenderKeep();const l=app.querySelectorAll('[data-it-text]');l[l.length-1]?.focus()},
+  delItem(t){readDraft();ui.draft.items.splice(+t.dataset.i,1);rerenderKeep()},
+  equalW(){
+    readDraft(); const d=ui.draft;
+    if(d.mode==='ref') d.ref=splitEq(Object.keys(d.ref));
+    else {const pp=toPct(d.items.map(()=>1));d.items.forEach((it,i)=>it.poids=pp[i])}
+    rerenderKeep();
+  },
   async createEval(){
-    readDraft();
-    const titre=(ui.draftTitre||'').trim(); if(!titre){toast('Donnez un titre à l’évaluation.');$('#neTitre').focus();return}
-    const comps=CODES.filter(c=>ui.draftComps[c]!=null).map(c=>({code:c,coef:ui.draftComps[c]}));
-    if(!comps.length){toast('Cochez au moins une compétence.');return}
-    const ev={id:uid(),class_id:$('#evClass').value,titre,date:ui.draftDate||today(),type:ui.draftType,activite:$('#neAct').value,comps,created_at:new Date().toISOString()};
+    readDraft(); const d=ui.draft;
+    const titre=(d.titre||'').trim(); if(!titre){toast('Donnez un titre à l’évaluation.');$('#neTitre').focus();return}
+    let comps;
+    if(d.mode==='ref') comps=CODES.filter(c=>d.ref[c]!=null).map(c=>({code:c,poids:d.ref[c]||0}));
+    else comps=d.items.filter(it=>(it.texte||'').trim()).map((it,i)=>({id:'q'+(i+1),code:it.comp||null,texte:it.texte.trim(),poids:it.poids||0}));
+    if(!comps.length){toast(d.mode==='ref'?'Cochez au moins une compétence.':'Ajoutez au moins une question.');return}
+    if(!comps.some(c=>c.poids>0)) comps.forEach(c=>c.poids=1);
+    const ev={id:uid(),class_id:$('#evClass').value,titre,date:d.date||today(),type:d.type,activite:d.act||null,comps,created_at:new Date().toISOString()};
     if(!await save('evaluations',ev,'Évaluation créée'))return;
-    S.evaluations.push(ev); ui.evalId=ev.id; ui.classId=ev.class_id; ui.stuIdx=0; ui.newEval=false; ui.draftComps=null; ui.draftTitre=''; render(); window.scrollTo(0,0);
+    S.evaluations.push(ev); ui.evalId=ev.id; ui.classId=ev.class_id; ui.stuIdx=0; ui.newEval=false; ui.draft=null; render(); window.scrollTo(0,0);
   },
   prevStu(){flush();ui.stuIdx--;ui.open=null;render();window.scrollTo(0,0)},
   nextStu(){flush();ui.stuIdx++;ui.open=null;render();window.scrollTo(0,0)},
@@ -714,7 +915,7 @@ const A = {
   async viewPhoto(t){
     const {r}=curCtx(); const code=t.dataset.c, path=r.photos[code][+t.dataset.i]; const u=(await urlsFor([path]))[path];
     const ov=document.createElement('div');ov.className='ov';ov.setAttribute('role','dialog');
-    ov.innerHTML=`${u?`<img src="${esc(u)}" alt="Photo ${code}">`:'<p style="color:#fff">Photo indisponible</p>'}<div class="row" style="justify-content:center"><button class="btn danger" data-x="del">Supprimer la photo</button><button class="btn primary" data-x="close">Fermer</button></div>`;
+    ov.innerHTML=`${u?`<img src="${esc(u)}" alt="Photo">`:'<p style="color:#fff">Photo indisponible</p>'}<div class="row" style="justify-content:center"><button class="btn danger" data-x="del">Supprimer la photo</button><button class="btn primary" data-x="close">Fermer</button></div>`;
     document.body.appendChild(ov); ov.querySelector('[data-x="close"]').focus();
     ov.addEventListener('click',async e=>{
       const b=e.target.closest('[data-x]'); if(!b&&e.target!==ov)return; ov.remove();
@@ -723,7 +924,9 @@ const A = {
   },
   async csv(){
     const cid=$('#resClass').value, ev=S.evaluations.find(e=>e.id===$('#resEval').value); if(!ev)return;
-    const lines=['Nom;Prénom;Note'].concat(stuOf(cid).map(s=>{const r=resOf(ev,s),n=noteOf(ev,r);return [s.nom,s.prenom,r.statut==='absent'?'Abs':r.statut==='non_rendu'?'NR':n.final==null?'':String(n.final).replace('.',',')].map(x=>String(x).replace(/;/g,',')).join(';')}));
+    const lines=['Nom;Prénom;Note /20;Pourcentage;Niveau'].concat(stuOf(cid).map(s=>{const r=resOf(ev,s),n=score(ev,r);
+      const st=r.statut==='absent'?'Abs':r.statut==='non_rendu'?'NR':null;
+      return [s.nom,s.prenom,st||(n.ratio==null?'':fmt(n.ratio*20)),st||(n.ratio==null?'':Math.round(n.ratio*100)),st||(n.ratio==null?'':LEVELS[lvlIdx(n.ratio)].n)].map(x=>String(x).replace(/;/g,',')).join(';')}));
     const blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
     downloadBlob(blob,`${safeName(S.classes.find(c=>c.id===cid)?.nom)} - ${safeName(ev.titre)} - ${ev.date}.csv`);
   },
@@ -738,14 +941,28 @@ app.addEventListener('submit',async e=>{
 });
 app.addEventListener('change',e=>{
   const t=e.target;
-  if(t.id==='evClass'){readDraft();ui.classId=t.value;render()}
-  else if(t.id==='neAct'){readDraft();ui.draftAct=t.value;ui.draftComps=Object.fromEntries(actOf(t.value).comps.map(c=>[c,1]));render()}
-  else if(t.dataset.cc){const inp=app.querySelector(`[data-coef="${t.dataset.cc}"]`);inp.disabled=!t.checked}
+  if(t.id==='evClass'){readDraft();ui.classId=t.value;rerenderKeep()}
+  else if(t.id==='neAct'){readDraft();const d=ui.draft;d.act=t.value;d.actAuto=false;if(d.mode==='ref')d.ref=splitEq(actOf(t.value).comps);rerenderKeep()}
+  else if(t.dataset.cc){readDraft();ui.draft.ref=splitEq(Object.keys(ui.draft.ref));rerenderKeep()}
+  else if(t.dataset.itComp!=null){readDraft();const it=ui.draft.items[+t.dataset.itComp];if(it)it.auto=false;rerenderKeep()}
   else if(t.id==='resClass'){ui.classId=t.value;ui.evalId=evalsOf(t.value)[0]?.id||null;render()}
   else if(t.id==='resEval'){ui.evalId=t.value;render()}
-  else if(t.id==='override'){const {r}=curCtx();const v=t.value.trim();const n=num(v);if(v&&(n==null||n<0||n>20)){toast('Entrez une note entre 0 et 20, ou laissez vide.');return}r.note_manuelle=v?n:null;putRes(r);rerenderKeep()}
+  else if(t.id==='override'){
+    const {r}=curCtx(); const v=t.value.trim();
+    if(!v) r.note_manuelle=null;
+    else if(S.affichage==='niveau') r.note_manuelle=Math.round(+v/3*20*2)/2;
+    else { const n=num(v), max=S.affichage==='pourcent'?100:20;
+      if(n==null||n<0||n>max){toast(`Entrez une valeur entre 0 et ${max}, ou laissez vide.`);return}
+      r.note_manuelle=S.affichage==='pourcent'?n/5:n; }
+    putRes(r); rerenderKeep();
+  }
 });
-app.addEventListener('input',e=>{if(e.target.id==='com'){const {r}=curCtx();r.commentaire=e.target.value;putRes(r)}});
+app.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.id==='com'){const {r}=curCtx();r.commentaire=t.value;putRes(r)}
+  else if(t.dataset.poids!=null||t.dataset.itPoids!=null) updateTotal();
+  else if(t.dataset.itText!=null){t.style.height='auto';t.style.height=t.scrollHeight+'px'}
+});
 $('#csvIn').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;let txt=await f.text();if(txt.includes('�')){const buf=await f.arrayBuffer();txt=new TextDecoder('windows-1252').decode(buf)}await addStudents(parseList(txt))});
 $('#photoIn').addEventListener('change',async e=>{
   const files=[...e.target.files]; const ctx=photoCtx; if(!files.length||!ctx)return;
@@ -780,40 +997,39 @@ async function makePdf(ev,studs,btn){
     const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:'mm',format:'a4'});
     const W=210,M=14,ink=[28,43,57],mut=[90,102,114],acc=[184,65,12],blue=[47,109,181];
     const LC=[[242,139,130],[255,204,128],[168,209,240],[59,120,194]];
-    const cls=S.classes.find(c=>c.id===ev.class_id), act=actOf(ev.activite);
+    const cls=S.classes.find(c=>c.id===ev.class_id), act=actOf(ev.activite), items=itemsOf(ev), eq=equalW(items);
     const T=(s,x,y,o)=>doc.text(pdfSafe(s),x,y,o);
-    const allPaths=studs.flatMap(s=>Object.values(resOf(ev,s).photos||{}).flat());
-    const urls=await urlsFor(allPaths);
+    const urls=await urlsFor(studs.flatMap(s=>Object.values(resOf(ev,s).photos||{}).flat()));
     for(let si=0;si<studs.length;si++){
       const s=studs[si]; if(si>0)doc.addPage(); let y=M+4;
       const need=h=>{if(y+h>297-M){doc.addPage();y=M+4}};
-      const r=resOf(ev,s), n=noteOf(ev,r);
+      const r=resOf(ev,s), n=score(ev,r);
       doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...mut);T(`${CONFIG.ETABLISSEMENT||''} · ${cls?.nom||''}`,M,y);
       y+=8;doc.setFont('helvetica','bold');doc.setFontSize(18);doc.setTextColor(...ink);T(fullName(s),M,y);
-      doc.setFontSize(24);doc.setTextColor(...blue);T(r.statut==='absent'?'Absent':r.statut==='non_rendu'?'Non rendu':fmt(n.final)+' / 20',W-M,y,{align:'right'});
+      doc.setFontSize(S.affichage==='niveau'?15:22);doc.setTextColor(...blue);T(r.statut==='absent'?'Absent':r.statut==='non_rendu'?'Non rendu':fmtRes(n.ratio),W-M,y,{align:'right'});
       y+=7;doc.setFont('helvetica','normal');doc.setFontSize(10.5);doc.setTextColor(...ink);T(`${ev.titre} · ${frDate(ev.date)} · ${ev.type||''}`,M,y);
-      y+=5;doc.setTextColor(...mut);doc.setFontSize(9.5);T(`Activité ${ev.activite} - ${act?.name||''} · Unité ${act?.unit||''}`,M,y);
-      if(r.note_manuelle!=null&&n.calc!=null){y+=5;T(`Note ajustée par l'enseignant (calculée : ${fmt(n.calc)})`,M,y)}
+      if(act){y+=5;doc.setTextColor(...mut);doc.setFontSize(9.5);T(`Activité ${ev.activite} - ${act.name} · Unité ${act.unit}`,M,y)}
+      if(r.note_manuelle!=null&&n.calc!=null){y+=5;doc.setTextColor(...mut);doc.setFontSize(9.5);T(`Résultat ajusté par l'enseignant (calculé : ${fmtRes(n.calc)})`,M,y)}
       y+=8;doc.setDrawColor(...ink);doc.setLineWidth(.5);doc.line(M,y,W-M,y);y+=6;
-      doc.setFontSize(8.5);doc.setTextColor(...mut);doc.setFont('helvetica','bold');T('Compétence',M,y);T('Coef',W-M-52,y);T('Niveau',W-M-38,y);y+=5;
-      for(const c of ev.comps||[]){
-        const lines=doc.splitTextToSize(pdfSafe(`${c.code}  ${COMPS[c.code][0]}`),W-2*M-62);
+      doc.setFontSize(8.5);doc.setTextColor(...mut);doc.setFont('helvetica','bold');T(items.some(i=>i.q)?'Question / critère':'Compétence',M,y);if(!eq)T('Poids',W-M-54,y);T('Niveau',W-M-38,y);y+=5;
+      for(const it of items){
+        const lines=doc.splitTextToSize(pdfSafe(`${itemLabel(it)}  ${it.texte}${it.q&&it.comp?'  ('+it.comp+')':''}`),W-2*M-64);
         need(lines.length*4.6+3);
         doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(...ink);doc.text(lines,M,y);
-        T(String(c.coef||1),W-M-50,y);
-        const v=r.statut?null:r.niveaux?.[c.code];
+        if(!eq)T(String(pctOf(it,items)).replace('.',',')+' %',W-M-54,y);
+        const v=r.statut?null:r.niveaux?.[it.id];
         if(v!=null){doc.setFillColor(...LC[v]);doc.roundedRect(W-M-40,y-3.8,40,5.6,1.2,1.2,'F');doc.setTextColor(...(v===3?[255,255,255]:ink));doc.setFont('helvetica','bold');doc.setFontSize(9);T(LEVELS[v].n,W-M-20,y,{align:'center'})}
         else{doc.setTextColor(...mut);T('-',W-M-20,y,{align:'center'})}
         y+=lines.length*4.6+2.4;
       }
       if((r.commentaire||'').trim()){y+=3;need(14);doc.setFont('helvetica','bold');doc.setFontSize(10.5);doc.setTextColor(...ink);T('Commentaire',M,y);y+=5;doc.setFont('helvetica','normal');doc.setFontSize(10);const cl=doc.splitTextToSize(pdfSafe(r.commentaire),W-2*M);need(cl.length*4.8);doc.text(cl,M,y);y+=cl.length*4.8}
-      const withPh=(ev.comps||[]).filter(c=>(r.photos?.[c.code]||[]).length);
+      const withPh=items.filter(it=>(r.photos?.[it.id]||[]).length);
       if(withPh.length){
         y+=6;need(20);doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(...ink);T('Photos de terrain',M,y);y+=6;
         const cw=(W-2*M-6)/2,ch=64;
-        for(const c of withPh){
-          need(8+ch);doc.setFontSize(9.5);doc.setTextColor(...acc);doc.setFont('helvetica','bold');T(c.code,M,y);doc.setTextColor(...ink);doc.setFont('helvetica','normal');T(COMPS[c.code][0].slice(0,90),M+11,y);y+=3;
-          const ps=r.photos[c.code];
+        for(const it of withPh){
+          need(8+ch);doc.setFontSize(9.5);doc.setTextColor(...acc);doc.setFont('helvetica','bold');T(itemLabel(it),M,y);doc.setTextColor(...ink);doc.setFont('helvetica','normal');T(it.texte.slice(0,90),M+11,y);y+=3;
+          const ps=r.photos[it.id];
           for(let i=0;i<ps.length;i++){
             if(i>0&&i%2===0){y+=ch+4;need(ch)}
             const x=M+(i%2)*(cw+6);
@@ -829,6 +1045,7 @@ async function makePdf(ev,studs,btn){
   }catch(e){console.error(e);toast('Le PDF n’a pas pu être créé.')}
   finally{btn.disabled=false;btn.innerHTML=lbl}
 }
+
 
 start();
 
