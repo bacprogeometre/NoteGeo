@@ -218,6 +218,11 @@ tr.click:hover td.n{color:var(--blue)}
 .evitem{display:flex;gap:6px;align-items:stretch}
 .evitem .classcard{flex:1;min-width:0}
 .evdel{width:48px;padding:0;color:var(--danger);border-color:var(--line)}
+.cmtadd{font-size:.78rem;padding:2px 0;color:var(--muted)}
+.cline.sub + .cmtadd,.cline.sub + .cmt{margin-left:15px}
+.cmt{display:block}
+.cmt textarea{min-height:38px;padding:6px 10px;font-size:.9rem;resize:vertical;overflow:hidden;background:#FFFBEA;border-color:#E9D9A6}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 /* overlays */
 .ov{position:fixed;inset:0;z-index:50;background:rgba(15,22,30,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .ov img{max-width:100%;max-height:72vh;border-radius:8px}
@@ -541,6 +546,7 @@ function bigHTML(x){
   return `${fmt(x*20)}<small> /20</small>`;
 }
 const resLabel = (r,n)=> r.statut==='absent'?'Abs.':r.statut==='non_rendu'?'N.R.':fmtShort(n.ratio);
+const comOf = (r,key)=> (r.niveaux?._c?.[key])||'';
 const photoCount = r=>Object.values(r.photos||{}).reduce((a,l)=>a+l.length,0);
 const isQEval = ev=> itemsOf(ev).some(i=>i.q);
 
@@ -646,6 +652,7 @@ function render(){
   app.innerHTML = demo + html;
   app.classList.toggle('levels5',CUR.ech===5);
   setSync(); hydrateImgs(); updateTotal();
+  app.querySelectorAll('[data-cm]').forEach(t=>{t.style.height='auto';t.style.height=t.scrollHeight+'px'});
   app.querySelectorAll('[data-it-text]').forEach(t=>{t.style.height='auto';t.style.height=t.scrollHeight+'px'});
 }
 
@@ -767,6 +774,11 @@ function viewEvaluer(){
    </aside>
   </div>`;
 }
+function cmtBlock(r,key,label){
+  const v=comOf(r,key), open=v||ui.cmOpen?.[key];
+  if(!open) return `<button class="linkbtn cmtadd" data-a="openCm" data-k="${esc(key)}">+ Commentaire pour l’élève</button>`;
+  return `<label class="cmt"><span class="sr">Commentaire sur ${esc(label)}</span><textarea class="inp" data-cm="${esc(key)}" rows="1" placeholder="Ce qui ne va pas, ce qu’il faut revoir…">${esc(v)}</textarea></label>`;
+}
 function itemRow(r,it,items,eq,qev){
   const off=it.comp&&!it.crits.length?COMPS[it.comp][1]:null;
   const ph=(r.photos?.[it.id])||[]; const up=uploading[r.id+'|'+it.id]||0;
@@ -780,7 +792,7 @@ function itemRow(r,it,items,eq,qev){
     const x=itemRatio(it,r);
     return `<div class="comp" id="comp-${esc(it.id)}">
      <div class="chead"><div class="ctitle">${head}</div>${x!=null?`<span class="cell sum c${lvlIdx(x)}" title="${Math.round(x*100)} %">${LEVELS[lvlIdx(x)].a}</span>`:''}${cam}</div>
-     ${it.crits.map(c=>`<div class="cline sub"><div class="ctitle"><span class="t2">${esc(c.t)}</span><span class="h2">${ptsTxt(c.pts)}</span></div>${lv(c.key,r.niveaux?.[c.key])}<span aria-hidden="true"></span></div>`).join('')}
+     ${it.crits.map(c=>`<div class="cline sub"><div class="ctitle"><span class="t2">${esc(c.t)}</span><span class="h2">${ptsTxt(c.pts)}</span></div>${lv(c.key,r.niveaux?.[c.key])}<span aria-hidden="true"></span></div>${cmtBlock(r,c.key,c.t)}`).join('')}
      ${thumbs}
     </div>`;
   }
@@ -790,6 +802,7 @@ function itemRow(r,it,items,eq,qev){
     ${lv(it.id,r.niveaux?.[it.id])}
     ${cam}
    </div>
+   ${cmtBlock(r,it.id,itemLabel(it))}
    ${open?`<ul class="crit">${off.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
    ${thumbs}
   </div>`;
@@ -984,7 +997,7 @@ const A = {
   async delEval(t){
     const ev=S.evaluations.find(e=>e.id===t.dataset.id); if(!ev) return;
     const rs=Object.values(S.results).filter(r=>r.evaluation_id===ev.id);
-    const graded=rs.filter(r=>r.statut||Object.keys(r.niveaux||{}).length).length;
+    const graded=rs.filter(r=>r.statut||Object.keys(r.niveaux||{}).some(k=>k!=='_c')).length;
     const paths=rs.flatMap(r=>Object.values(r.photos||{}).flat());
     if(!await confirmBox('Supprimer l’évaluation ?',`« ${ev.titre} » sera supprimée pour tous les enseignants, avec ${graded} fiche${graded>1?'s':''} d’élève notée${graded>1?'s':''} et ${paths.length} photo${paths.length>1?'s':''}. Cette action est définitive.`,'Supprimer'))return;
     await flush();
@@ -1055,8 +1068,9 @@ const A = {
     if(!await save('evaluations',ev,'Évaluation créée'))return;
     S.evaluations.push(ev); ui.evalId=ev.id; ui.classId=ev.class_id; ui.stuIdx=0; ui.newEval=false; ui.draft=null; render(); window.scrollTo(0,0);
   },
-  prevStu(){flush();ui.stuIdx--;ui.open=null;render();window.scrollTo(0,0)},
-  nextStu(){flush();ui.stuIdx++;ui.open=null;render();window.scrollTo(0,0)},
+  prevStu(){flush();ui.stuIdx--;ui.open=null;ui.cmOpen={};render();window.scrollTo(0,0)},
+  nextStu(){flush();ui.stuIdx++;ui.open=null;ui.cmOpen={};render();window.scrollTo(0,0)},
+  openCm(t){ui.cmOpen=ui.cmOpen||{};ui.cmOpen[t.dataset.k]=true;rerenderKeep();const ta=app.querySelector(`[data-cm="${CSS.escape(t.dataset.k)}"]`);ta?.focus()},
   toggleCrit(t){ui.open=ui.open===t.dataset.c?null:t.dataset.c;rerenderKeep()},
   lvl(t){const {r}=curCtx();const v=+t.dataset.v,c=t.dataset.c;r.niveaux=r.niveaux||{};if(r.niveaux[c]===v)delete r.niveaux[c];else r.niveaux[c]=v;putRes(r);rerenderKeep()},
   statut(t){const {r}=curCtx();r.statut=r.statut===t.dataset.v?null:t.dataset.v;putRes(r);rerenderKeep()},
@@ -1113,6 +1127,7 @@ app.addEventListener('change',e=>{
 app.addEventListener('input',e=>{
   const t=e.target;
   if(t.id==='com'){const {r}=curCtx();r.commentaire=t.value;putRes(r)}
+  else if(t.dataset.cm!=null){const {r}=curCtx();const c={...(r.niveaux?._c||{})};const v=t.value;if(v.trim())c[t.dataset.cm]=v;else delete c[t.dataset.cm];r.niveaux={...(r.niveaux||{}),_c:c};if(!Object.keys(c).length)delete r.niveaux._c;putRes(r);t.style.height='auto';t.style.height=t.scrollHeight+'px'}
   else if(t.dataset.poids!=null||t.dataset.itPoids!=null||t.dataset.crPts!=null) updateTotal();
   else if(t.dataset.itText!=null){t.style.height='auto';t.style.height=t.scrollHeight+'px'}
 });
@@ -1174,10 +1189,12 @@ async function makePdf(ev,studs,btn){
         const x=r.statut?null:itemRatio(it,r), v=x==null?null:lvlIdx(x);
         const box=(vv,yy)=>{if(vv!=null){doc.setFillColor(...LC[vv]);doc.roundedRect(W-M-40,yy-3.8,40,5.6,1.2,1.2,'F');doc.setTextColor(...(vv===3?[255,255,255]:ink));doc.setFont('helvetica','bold');doc.setFontSize(9);T(LEVELS[vv].n,W-M-20,yy,{align:'center'})}else{doc.setTextColor(...mut);doc.setFont('helvetica','normal');T('-',W-M-20,yy,{align:'center'})}};
         box(v,y); y+=lines.length*4.6+2.4;
+        const cmPdf=(key,indent)=>{const tx=comOf(r,key).trim();if(!tx||r.statut)return;const cl=doc.splitTextToSize(pdfSafe('> '+tx),W-2*M-indent-44);need(cl.length*4.2+1);doc.setFont('helvetica','italic');doc.setFontSize(9);doc.setTextColor(150,70,10);doc.text(cl,M+indent,y);y+=cl.length*4.2+1.2};
+        if(!it.crits.length) cmPdf(it.id,6);
         for(const c of it.crits){
           const cl=doc.splitTextToSize(pdfSafe('- '+c.t),W-2*M-70); need(cl.length*4.3+2);
           doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...mut);doc.text(cl,M+6,y);T(ptsTxt(c.pts),W-M-54,y);
-          const cv=r.statut?null:r.niveaux?.[c.key]; box(cv??null,y); y+=cl.length*4.3+1.8;
+          const cv=r.statut?null:r.niveaux?.[c.key]; box(cv??null,y); y+=cl.length*4.3+1.8; cmPdf(c.key,12);
         }
       }
       if(qev&&!r.statut){y+=1;need(6);doc.setFont('helvetica','bold');doc.setFontSize(9.5);doc.setTextColor(...ink);T(`Barème : ${String(Math.round((n.pts||0)*100)/100).replace('.',',')} / ${ptsTxt(n.max)}`,W-M,y,{align:'right'});y+=5}
