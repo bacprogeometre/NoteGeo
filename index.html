@@ -1,0 +1,833 @@
+const CONFIG = {
+  SUPABASE_URL: "https://hdfuzlziobjmwjbvpmxe.supabase.co/rest/v1/",
+  SUPABASE_ANON_KEY: "sb_publishable_WIUtN1g33Hwy-g1PS2O7Fw_TuN0zbWE",          // la clé publique
+  ETABLISSEMENT: "Lycée Pierre Mendès France"
+};
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1C2B39">
+<title>Notes Géo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* ======================================================================
+   Notes Géo — appli de notation Bac Pro Géomètre
+   Thème clair unique à fort contraste (lisible en plein soleil).
+   ====================================================================== */
+:root{
+  --bg:#F7F8FA; --surface:#FFFFFF; --soft:#EEF1F5; --ink:#1C2B39; --muted:#5A6672; --line:#D9DEE5; --line2:#C9C6BA;
+  --blue:#2F6DB5; --blue-soft:#EAF1FA; --blue-line:#C9DBF0; --accent:#B8410C;
+  --l0:#F28B82; --l1:#FFCC80; --l2:#A8D1F0; --l3:#3B78C2;
+  --ok:#3F6B3A; --warn-bg:#FFF4E5; --warn-line:#FFCC80; --warn-ink:#7A3A00; --danger:#B3261E;
+  --f-body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 var(--f-body);-webkit-text-size-adjust:100%}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+[hidden]{display:none!important}
+h1,h2,h3{margin:0;line-height:1.2;text-wrap:balance}
+h1{font-size:1.75rem}
+h2{font-size:1.2rem}
+
+/* top bar */
+.top{position:sticky;top:0;z-index:10;background:var(--surface);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+.top .in{max-width:1240px;margin:0 auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px))}
+.brand{display:flex;flex-direction:column;font-weight:700;font-size:1.1rem;line-height:1.15;margin-right:16px}
+.brand small{font-weight:400;font-size:.75rem;color:var(--muted)}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tab{min-height:44px;padding:0 16px;border:0;border-radius:8px;background:transparent;color:var(--muted);font-size:1rem}
+.tab[aria-current="page"]{background:var(--blue-soft);color:var(--blue);font-weight:700}
+.sync{margin-left:auto;font-size:.82rem;color:var(--muted);display:flex;align-items:center;gap:10px}
+.sync .dot{width:9px;height:9px;border-radius:50%;background:var(--ok);display:inline-block;margin-right:6px}
+.sync .dot.busy{background:#C98A00}.sync .dot.err{background:var(--danger)}
+@media (max-width:700px){.brand{margin-right:auto}.sync{order:2;margin-left:0}.tabs{order:3;width:100%}.tab{flex:1;padding:0 6px;font-size:.95rem}}
+
+.wrap{max-width:1240px;margin:0 auto;padding:20px max(16px,env(safe-area-inset-right,0px)) 80px max(16px,env(safe-area-inset-left,0px))}
+.banner{background:var(--warn-bg);border:1px solid var(--warn-line);color:var(--warn-ink);border-radius:10px;padding:10px 14px;font-size:.92rem;margin-bottom:16px}
+
+/* generic */
+.card{background:var(--surface);border-radius:12px;padding:18px 20px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border:1px solid var(--line2);border-radius:8px;background:var(--surface);font-size:.95rem;font-weight:700;color:var(--ink);text-decoration:none}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--danger);border-color:var(--danger);background:var(--surface)}
+.btn.small{min-height:36px;padding:0 10px;font-size:.85rem}
+.btn:disabled{opacity:.5;cursor:default}
+.btn svg{width:18px;height:18px;flex:none}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.between{justify-content:space-between}
+.stack{display:flex;flex-direction:column;gap:12px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:.85rem;font-weight:700;color:var(--muted)}
+label.f input,label.f select,label.f textarea,.inp{min-height:44px;border:1px solid var(--line2);border-radius:8px;padding:8px 12px;background:var(--surface);font-weight:400;font-size:1rem;color:var(--ink);width:100%}
+textarea.inp,label.f textarea{min-height:90px;resize:vertical}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:640px){.grid2,.grid3{grid-template-columns:1fr}}
+.empty{border:2px dashed var(--line);border-radius:12px;padding:28px 20px;text-align:center;color:var(--muted)}
+.pill{display:inline-block;padding:2px 10px;border-radius:12px;background:#E7ECF2;font-size:.75rem;font-weight:700;color:var(--ink)}
+.code{font-family:var(--f-mono);color:var(--accent);font-weight:600}
+.split{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:start}
+@media (max-width:900px){.split{grid-template-columns:1fr}}
+
+/* classes */
+.classlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.classcard{text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:4px;min-height:96px}
+.classcard[aria-current="true"]{border:2px solid var(--blue)}
+.classcard b{font-size:1.1rem}
+.stu{display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding:6px 0}
+.stu:last-child{border-bottom:0}
+.stu .name{flex:1;min-width:0;text-align:left;border:0;background:transparent;padding:8px 0;font-weight:700;overflow-wrap:anywhere}
+.stu .name:hover{color:var(--blue)}
+
+/* saisie */
+.who{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.who .nm{font-size:1.7rem;font-weight:700;line-height:1.1;overflow-wrap:anywhere}
+.nav{display:flex;align-items:center;gap:10px}
+.nav button{width:52px;height:52px;border-radius:10px;border:1px solid var(--line2);background:var(--surface);display:flex;align-items:center;justify-content:center}
+.nav button.next{background:var(--blue);border-color:var(--blue)}
+.nav button svg{width:22px;height:22px}
+.comp{background:var(--surface);border-radius:10px;padding:10px 10px 10px 14px;display:flex;flex-direction:column;gap:8px}
+.comp + .comp{margin-top:8px}
+.cline{display:grid;grid-template-columns:minmax(0,260px) repeat(4,minmax(0,1fr)) 60px;gap:6px;align-items:center}
+@media (max-width:760px){.cline{grid-template-columns:repeat(4,minmax(0,1fr)) 54px}.cline .ctitle{grid-column:1/-1}}
+.ctitle{border:0;background:transparent;text-align:left;padding:4px 0;display:flex;flex-direction:column;gap:2px;min-width:0}
+.ctitle .t{font-weight:700;font-size:.95rem;line-height:1.25}
+.ctitle .h{font-size:.78rem;color:var(--muted);text-decoration:underline}
+.lv{min-height:56px;border:1px solid #DAD8CF;border-radius:8px;background:var(--bg);color:var(--muted);font-size:.9rem;line-height:1.1;padding:4px}
+.lv[aria-pressed="true"]{border:2px solid var(--ink);font-weight:700;color:var(--ink)}
+.lv[aria-pressed="true"][data-v="0"]{background:var(--l0)}
+.lv[aria-pressed="true"][data-v="1"]{background:var(--l1)}
+.lv[aria-pressed="true"][data-v="2"]{background:var(--l2)}
+.lv[aria-pressed="true"][data-v="3"]{background:var(--l3);color:#fff}
+@media (max-width:480px){.lv{font-size:.76rem;hyphens:manual}.cline{gap:5px}}
+.cam{position:relative;min-height:56px;border:1px solid var(--blue-line);border-radius:8px;background:var(--blue-soft);display:flex;align-items:center;justify-content:center}
+.cam svg{width:24px;height:24px}
+.cam .badge{position:absolute;top:-7px;right:-7px;min-width:22px;height:22px;padding:0 5px;border-radius:11px;background:var(--ink);color:#fff;font-size:.75rem;font-weight:700;display:flex;align-items:center;justify-content:center}
+.crit{margin:0;padding:10px 14px 10px 30px;background:var(--bg);border-radius:8px;font-size:.88rem;line-height:1.45;color:#2C3A47}
+.thumbs{display:flex;flex-wrap:wrap;gap:8px}
+.thumb{width:88px;height:66px;border-radius:6px;border:1px solid var(--line2);padding:0;background:var(--soft) center/cover no-repeat;position:relative;overflow:hidden}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb.up{display:grid;place-items:center}
+.thumb.up::after{content:"";width:22px;height:22px;border:3px solid var(--line);border-top-color:var(--blue);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.thumb.up::after{animation:none}}
+.notebox{background:var(--blue-soft);border:1px solid var(--blue-line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:4px}
+.notebox .big{font-family:var(--f-mono);font-size:3rem;font-weight:500;line-height:1;color:var(--blue)}
+.notebox .big small{font-size:1.2rem;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{min-height:40px;padding:0 12px;border:1px solid var(--line2);border-radius:20px;background:var(--surface);font-size:.85rem;display:inline-flex;align-items:center;gap:6px}
+.chip .x{border:0;background:transparent;padding:0 2px;color:var(--muted);font-weight:700}
+.toggle[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.savestate{font-size:.82rem;color:var(--ok)}
+
+/* résultats */
+.tblwrap{overflow-x:auto;background:var(--surface);border-radius:12px;padding:8px 14px 14px}
+table.res{border-collapse:separate;border-spacing:0 6px;width:100%;font-size:.92rem}
+table.res th{text-align:left;color:var(--muted);font-size:.78rem;padding:6px;white-space:nowrap}
+table.res td{padding:0 3px}
+table.res td.n{padding:6px;font-weight:700;white-space:nowrap}
+table.res td.note{text-align:right;font-family:var(--f-mono);font-size:1.05rem;font-weight:600;padding:6px}
+.cell{height:38px;min-width:46px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;background:#EEEDE7;color:var(--muted)}
+.cell.c0{background:var(--l0);color:var(--ink)}.cell.c1{background:var(--l1);color:var(--ink)}.cell.c2{background:var(--l2);color:var(--ink)}.cell.c3{background:var(--l3);color:#fff}
+tr.click{cursor:pointer}
+tr.click:hover td.n{color:var(--blue)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.8rem;color:var(--muted);margin-top:10px}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend i{width:14px;height:14px;border-radius:3px;display:inline-block}
+.stats .big{font-family:var(--f-mono);font-size:2.8rem;line-height:1;color:var(--blue)}
+.alert{background:var(--warn-bg);border:1px solid var(--warn-line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.alert strong{color:var(--warn-ink)}
+
+/* référentiel */
+.matrix{border-collapse:collapse;font-size:.85rem;min-width:820px;width:100%}
+.matrix th{font-family:var(--f-mono);font-size:.72rem;color:var(--muted);font-weight:500;padding:6px 2px}
+.matrix td{padding:6px 4px;border-top:1px solid #E4E2D9;text-align:center}
+.matrix td:first-child{text-align:left}
+.matrix tr.pole td{border-top:2px solid var(--ink)}
+.matrix tr.unit td{background:#F1F4F8}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%}
+.refcards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+@media (max-width:760px){.refcards{grid-template-columns:1fr}}
+.refcards ul{margin:0;padding-left:20px;font-size:.9rem;line-height:1.45;color:#2C3A47}
+
+/* fiche élève */
+.prog{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center}
+.prog .marks{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.prog .marks .cell{height:28px;min-width:34px;font-size:.75rem}
+.bar{height:10px;border-radius:5px;background:var(--soft);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--blue)}
+
+/* overlays */
+.ov{position:fixed;inset:0;z-index:50;background:rgba(15,22,30,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.ov img{max-width:100%;max-height:72vh;border-radius:8px}
+.dlg{background:var(--surface);border-radius:12px;padding:20px;max-width:440px;width:100%;display:flex;flex-direction:column;gap:12px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;z-index:60;font-weight:700;max-width:calc(100% - 32px)}
+.login{max-width:420px;margin:8vh auto 0}
+</style>
+</head>
+<body>
+<header class="top" id="top" hidden>
+  <div class="in">
+    <div class="brand">Notes Géo<small id="etab"></small></div>
+    <nav class="tabs" aria-label="Sections">
+      <button class="tab" data-tab="classes">Classes</button>
+      <button class="tab" data-tab="evaluer">Évaluer</button>
+      <button class="tab" data-tab="resultats">Résultats</button>
+      <button class="tab" data-tab="referentiel">Référentiel</button>
+    </nav>
+    <div class="sync"><span id="syncst"><span class="dot"></span>À jour</span><button class="btn small ghost" id="logout" hidden>Déconnexion</button></div>
+  </div>
+</header>
+<main class="wrap" id="app"><div class="empty">Chargement…</div></main>
+<input type="file" id="photoIn" accept="image/*" multiple hidden>
+<input type="file" id="csvIn" accept=".csv,.txt,text/csv,text/plain" hidden>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+"use strict";
+/* ======================================================================
+   1. RÉGLAGES — à compléter après la création du projet Supabase
+   (laisser vide = mode démo : données sur cet appareil uniquement)
+   ====================================================================== */
+const CONFIG = {
+  SUPABASE_URL: "",       // ex. "https://abcdefgh.supabase.co"
+  SUPABASE_ANON_KEY: "",  // clé publique « anon » ou « publishable »
+  ETABLISSEMENT: "Lycée Pierre Mendès France"
+};
+
+/* ======================================================================
+   2. RÉFÉRENTIEL BAC PRO GÉOMÈTRE (arrêté du 6 avril 2024)
+   ====================================================================== */
+const COMPS = {
+  C01:['Gérer les informations liées à son intervention au sein d’un collectif de travail',['Les consignes et prescriptions sont respectées','Le site est identifié','Les informations (foncières, DT/DICT, portails, archives …) et les pièces complémentaires sont collectées et exploitables','La synthèse des données concessionnaires est réalisée (assemblage des plans concessionnaires sur un seul plan)','Les Business Process Model and Notation (BPMN) sont identifiés','La convention BIM/CIM est analysée','Le rôle des interlocuteurs et la hiérarchie est identifiée']],
+  C02:['Choisir le matériel',['Le matériel est en adéquation avec l’activité à réaliser','Le matériel est prêt à être utilisé','La procédure de contrôle du fonctionnement est décrite','La signalisation est prévue en nombre suffisant et adaptée à l’intervention']],
+  C03:['Intégrer les enjeux du développement durable',['L’identification des déchets/matériaux et leurs catégories sont conformes aux règles environnementales et la gestion des déchets respecte le principe 3RVE en vigueur dans l’entreprise','Les pratiques éco-responsables (volume des fichiers envoyés, tirages, stockage des données …) sont appliquées','Les mesures préventives adaptées sont proposées','Les matériels, matériaux choisis prennent en compte les exigences environnementales']],
+  C04:['Participer à l’analyse foncière',['Les éléments existants et les détails à incidence foncière sont identifiés et pris en compte (limites présumées de propriété, emprise et contraintes du site, références existantes …)','Le fichier de synthèse est complet','Le rapport du portail « Géofoncier » est édité']],
+  C05:['Produire des documents fonciers',['Les données préexistantes sont intégrées','Le calage est réalisé et conforme aux tolérances et aux classes de précisions','Les fonctionnalités des logiciels utiles à la création des livrables sont maîtrisées','Le rendu graphique des documents fonciers correspond aux normes en vigueur et reprend toutes les informations utiles à la lecture par le client et à l’analyse foncière','Les procédures de sauvegarde de l’entreprise et les procédures d’enregistrement et de versement sur les portails professionnels et institutionnels sont respectées','Le livrable des Documents de Modification du Parcellaire Cadastral (DMPC) numérique est complet et conforme']],
+  C06:['Sécuriser son intervention',['Les documents de prévention (PGC SPS, plan de prévention ou PPSPS, DUER, plan de circulation …) et les habilitations nécessaires sont pris en compte','Les moyens de prévention prévus sont mis en œuvre et maintenus en état (signalisation, EPC et EPI)','Les éventuelles situations dangereuses, d’urgence ou d’accident sont identifiées et signalées','Des actions correctives sont proposées et hiérarchisées','L’organisation de l’intervention garantit la santé et la sécurité des intervenants']],
+  C07:['Réaliser un levé ou un récolement',['Les contraintes et l’emprise du site sont prises en compte','Les références existantes sont identifiées','La vérification in situ des moyens prévus est réalisée','La matérialisation des points de calage est adaptée et le calage réalisé est conforme','Les moyens d’acquisition sont vérifiés, configurés, paramétrés et utilisés conformément aux consignes','La densité des données est conforme aux consignes et les données sont enregistrées, sauvegardées et contrôlées','Les données attributaires (dimensions, date, références…) sont collectées','Les auto-contrôles sont réalisés','Les croquis de repérage ou d’un détail sont exploitables']],
+  C08:['Réaliser une implantation',['Les contraintes du site sont prises en compte','Les références existantes sont identifiées et contrôlées','La matérialisation des points de calage est adaptée et le calage réalisé est conforme','Le dossier des données préexistantes d’implantation est repris','Les moyens d’implantation sont vérifiés, configurés, paramétrés et utilisés conformément aux consignes','L’implantation est conforme aux consignes','Le relevé de contrôle de l’implantation est réalisé avec une station ou une méthode différente de celles de l’implantation','Les données sont enregistrées, sauvegardées et contrôlées','Les auto-contrôles sont réalisés (mesurage de positionnement et de dimensionnement)']],
+  C09:['Géoréférencer',['Les contraintes et l’emprise du site sont prises en compte','Les points géodésiques et les points d’appuis sont identifiés et observés','La vérification in situ des moyens prévus est réalisée','La matérialisation des points de calage et points d’appui est adaptée','Les moyens d’acquisition sont vérifiés, configurés, paramétrés et utilisés conformément aux consignes','Le géoréférencement est conforme au cahier des charges, aux classes de précisions et aux tolérances demandées','Les données sont enregistrées, sauvegardées et contrôlées','Les auto-contrôles sont réalisés','Les croquis de repérage ou d’un détail sont exploitables']],
+  C10:['Traiter les données',['Le dossier est créé ou repris','Le transfert des données est correctement assuré','Les données et la codification issues du levé sont contrôlées et éventuellement corrigées','Les outils de traitement de données sont maîtrisés','Le traitement est réalisé et conforme aux prescriptions','L’assemblage « simple » de nuages de points et le traitement de la corrélation d’images « simples » sont réalisés','Les résultats des calculs sont contrôlés et conformes au cahier des charges','Le format des résultats est compatible avec leur intégration dans une base de données','Les procédures de sauvegarde de l’entreprise sont respectées']],
+  C11:['Produire des documents techniques',['Les fonctionnalités des logiciels utiles à la création des livrables sont maîtrisées','Le rendu graphique correspond à la commande','Le livrable est conforme au cahier des charges et/ou aux normes graphiques en vigueur','Toutes les informations utiles à la lecture ont été indiquées','La charte informatique y compris les procédures de cybersécurité et les procédures de sauvegarde de l’entreprise sont respectées']],
+  C12:['Détecter les réseaux',['Les autorisations administratives sont en adéquation avec la mission à réaliser','Les contraintes et l’emprise du site sont prises en compte','Les DT/DICT sont à disposition et pris en compte','Les affleurants (émergences) des réseaux existants sont identifiés','Les moyens de détection (géo radar ou électromagnétique) sont adaptés à la nature des réseaux à détecter, vérifiés, configurés et utilisés conformément aux consignes','La détection de l’intégralité des réseaux est conforme aux consignes et permet de préciser la localisation (positionnement et profondeur)','Les auto-contrôles sont réalisés']],
+  C13:['Matérialiser les réseaux',['Les affleurants (émergences) des réseaux existants sont repérés','Le marquage/piquetage est effectué dans son intégralité et respecte le tableau 3 de la norme NF P98-332','Les auto-contrôles sont réalisés','Le compte rendu de l’intervention est réalisé avec les éléments liés à la détection (fréquence, classe de précision par réseau détecté, masque, réseau non identifié, réseaux détectés avec code couleur, symbolique, profondeur, plan, photos …)']],
+  C14:['Rendre compte oralement ou par écrit',['Le langage utilisé est approprié aux interlocuteurs','Le support et les outils sont adaptés','Le vocabulaire technique est maîtrisé','Les informations écrites transmises sont exploitables','Les contributions sur les plateformes collaboratives sont exploitables']]
+};
+const CODES = Object.keys(COMPS);
+const ACTS = [
+  {id:'1.1',name:'Préparation et organisation des interventions',pole:'Pôle 1 · Préparation et mission foncière',unit:'U2',comps:['C01','C02','C03','C04','C05']},
+  {id:'1.2',name:'Prestations topographiques dans le cadre d’une mission foncière',pole:'Pôle 1 · Préparation et mission foncière',unit:'U2',comps:['C01','C02','C03','C04','C05']},
+  {id:'2.1',name:'Réalisation d’un levé topographique',pole:'Pôle 2 · Topographie',unit:'U31',comps:['C06','C07']},
+  {id:'2.2',name:'Réalisation d’un géoréférencement',pole:'Pôle 2 · Topographie',unit:'U31',comps:['C06','C09']},
+  {id:'2.3',name:'Réalisation d’une implantation',pole:'Pôle 2 · Topographie',unit:'U31',comps:['C06','C08']},
+  {id:'2.4',name:'Réalisation d’un récolement',pole:'Pôle 2 · Topographie',unit:'U31',comps:['C06','C07']},
+  {id:'2.5',name:'Traitement des données',pole:'Pôle 2 · Topographie',unit:'U31',comps:['C06','C10','C11']},
+  {id:'3.1',name:'Détection et matérialisation des réseaux',pole:'Pôle 3 · Détection de réseaux',unit:'U32',comps:['C12','C13','C14']}
+];
+ACTS.forEach(a=>{['C03','C14'].forEach(t=>{if(!a.comps.includes(t))a.comps.push(t)});a.comps.sort()});
+const UNITS = [
+  {id:'U2',name:'Préparation et mission foncière',comps:['C01','C02','C03','C04','C05']},
+  {id:'U31',name:'Activités topographiques et traitement de données',comps:['C06','C07','C08','C09','C10','C11']},
+  {id:'U32',name:'Détection de réseaux',comps:['C12','C13','C14']}
+];
+const LEVELS = [{n:'Non acquis',a:'NA'},{n:'Fragile',a:'F'},{n:'Satisfaisant',a:'S',h:'Satis&shy;faisant'},{n:'Très bien maîtrisé',a:'TB'}];
+const TYPES = ['TP terrain','Contrôle écrit','DAO / CAO','Oral'];
+const DEFAULT_FAV = ['Bonne autonomie.','Auto-contrôles à systématiser.','Croquis peu exploitable.','Travail soigné.','Consignes de sécurité à respecter.'];
+
+/* ======================================================================
+   3. OUTILS
+   ====================================================================== */
+const $ = s=>document.querySelector(s);
+const app = $("#app");
+const esc = s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid = ()=> (crypto.randomUUID ? crypto.randomUUID() : 'id'+Date.now().toString(36)+Math.random().toString(36).slice(2));
+const today = ()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const frDate = s=>{if(!s)return'';const p=String(s).slice(0,10).split('-');return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:s};
+const fmt = x=> x==null||isNaN(x) ? '–' : String(Math.round(x*2)/2).replace('.',',');
+const num = s=>{const v=parseFloat(String(s??'').replace(',','.'));return isFinite(v)?v:null};
+const cmpName = (a,b)=> (a.nom||'').localeCompare(b.nom||'','fr',{sensitivity:'base'}) || (a.prenom||'').localeCompare(b.prenom||'','fr',{sensitivity:'base'});
+const fullName = s=> `${(s.nom||'').toUpperCase()} ${s.prenom||''}`.trim();
+const IC = {
+  cam:'<svg viewBox="0 0 24 24" fill="none" stroke="#2F6DB5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+  prev:'<svg viewBox="0 0 24 24" fill="none" stroke="#1C2B39" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>',
+  next:'<svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>',
+  dl:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14"/></svg>'
+};
+let toastT;
+function toast(m){document.querySelector('.toast')?.remove();const t=document.createElement('div');t.className='toast';t.setAttribute('role','status');t.textContent=m;document.body.appendChild(t);clearTimeout(toastT);toastT=setTimeout(()=>t.remove(),3500);}
+function confirmBox(title,text,okLabel){
+  return new Promise(res=>{
+    const ov=document.createElement('div');ov.className='ov';
+    ov.innerHTML=`<div class="dlg" role="alertdialog" aria-label="${esc(title)}"><h2>${esc(title)}</h2><p style="margin:0">${esc(text)}</p><div class="row" style="justify-content:flex-end"><button class="btn" data-r="0">Annuler</button><button class="btn danger" data-r="1">${esc(okLabel)}</button></div></div>`;
+    document.body.appendChild(ov);ov.querySelector('[data-r="0"]').focus();
+    ov.addEventListener('click',e=>{const b=e.target.closest('[data-r]');if(b||e.target===ov){ov.remove();res(b&&b.dataset.r==='1');}});
+  });
+}
+function blobToDataURL(b){return new Promise((r,j)=>{const f=new FileReader();f.onload=()=>r(f.result);f.onerror=j;f.readAsDataURL(b)})}
+async function shrink(file,max=1400,q=.72){
+  let bmp;
+  try{bmp=await createImageBitmap(file,{imageOrientation:'from-image'})}
+  catch(e){bmp=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=URL.createObjectURL(file)})}
+  const k=Math.min(1,max/Math.max(bmp.width,bmp.height));
+  const cv=document.createElement('canvas');cv.width=Math.round(bmp.width*k);cv.height=Math.round(bmp.height*k);
+  cv.getContext('2d').drawImage(bmp,0,0,cv.width,cv.height);
+  return await new Promise(r=>cv.toBlob(r,'image/jpeg',q));
+}
+
+/* ======================================================================
+   4. STOCKAGE : Supabase (partagé) ou démo (cet appareil)
+   ====================================================================== */
+const TABLES=['classes','students','evaluations','results','settings'];
+function makeLocal(){
+  const KEY='notesgeo-demo-v1'; let db={};
+  try{db=JSON.parse(localStorage.getItem(KEY))||{}}catch(e){db={}}
+  TABLES.forEach(t=>db[t]=db[t]||[]);
+  const mem={};
+  const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){toast("Mémoire de l'appareil pleine.")}};
+  return {
+    mode:'local',
+    async session(){return {user:{email:'démo'}}},
+    async signIn(){}, async signOut(){},
+    async loadAll(){return JSON.parse(JSON.stringify(db))},
+    async upsert(t,rows){for(const r of [].concat(rows)){const i=db[t].findIndex(x=>x.id===r.id);if(i>=0)db[t][i]=r;else db[t].push(r)}persist()},
+    async remove(t,ids){ids=[].concat(ids);db[t]=db[t].filter(x=>!ids.includes(x.id));persist()},
+    async uploadPhoto(path,blob){const d=await blobToDataURL(blob);mem[path]=d;try{localStorage.setItem('ph:'+path,d)}catch(e){}},
+    async photoUrls(paths){const o={};for(const p of paths){let v=mem[p];if(!v){try{v=localStorage.getItem('ph:'+p)}catch(e){}}o[p]=v||null}return o},
+    async deletePhotos(paths){paths.forEach(p=>{delete mem[p];try{localStorage.removeItem('ph:'+p)}catch(e){}})}
+  };
+}
+function makeSupa(){
+  const sb=supabase.createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_ANON_KEY);
+  const chk=({data,error})=>{if(error)throw error;return data};
+  async function all(t){let rows=[],from=0;for(;;){const d=chk(await sb.from(t).select('*').range(from,from+999));rows=rows.concat(d);if(d.length<1000)break;from+=1000}return rows}
+  return {
+    mode:'cloud', sb,
+    async session(){const {data}=await sb.auth.getSession();return data.session},
+    async signIn(email,password){const {error}=await sb.auth.signInWithPassword({email,password});if(error)throw error},
+    async signOut(){await sb.auth.signOut()},
+    async loadAll(){const o={};await Promise.all(TABLES.map(async t=>{o[t]=await all(t)}));return o},
+    async upsert(t,rows){chk(await sb.from(t).upsert(rows))},
+    async remove(t,ids){ids=[].concat(ids);for(let i=0;i<ids.length;i+=100)chk(await sb.from(t).delete().in('id',ids.slice(i,i+100)))},
+    async uploadPhoto(path,blob){chk(await sb.storage.from('photos').upload(path,blob,{contentType:'image/jpeg',upsert:true}))},
+    async photoUrls(paths){if(!paths.length)return{};const d=chk(await sb.storage.from('photos').createSignedUrls(paths,3600));const o={};d.forEach(x=>{o[x.path]=x.signedUrl||null});return o},
+    async deletePhotos(paths){for(let i=0;i<paths.length;i+=100){const part=paths.slice(i,i+100);if(part.length)chk(await sb.storage.from('photos').remove(part))}}
+  };
+}
+const CLOUD = !!(CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY);
+let B = null;
+
+/* ======================================================================
+   5. ÉTAT
+   ====================================================================== */
+const S = {classes:[],students:[],evaluations:[],results:{},fav:DEFAULT_FAV.slice()};
+const ui = {tab:'classes',classId:null,evalId:null,stuIdx:0,open:null,ficheId:null,newEval:false,import:false};
+try{Object.assign(ui,JSON.parse(localStorage.getItem('notesgeo-ui')||'{}'),{newEval:false,import:false,ficheId:null})}catch(e){}
+function saveUi(){try{localStorage.setItem('notesgeo-ui',JSON.stringify({tab:ui.tab,classId:ui.classId,evalId:ui.evalId,stuIdx:ui.stuIdx}))}catch(e){}}
+
+const stuOf = cid=> S.students.filter(s=>s.class_id===cid).sort(cmpName);
+const evalsOf = cid=> S.evaluations.filter(e=>e.class_id===cid).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+const curEval = ()=> S.evaluations.find(e=>e.id===ui.evalId)||null;
+const actOf = id=> ACTS.find(a=>a.id===id);
+function resOf(ev,st){const id=ev.id+'_'+st.id;return S.results[id]||{id,evaluation_id:ev.id,student_id:st.id,niveaux:{},statut:null,commentaire:'',note_manuelle:null,photos:{}}}
+function noteOf(ev,r){
+  if(r.statut) return {calc:null,final:null,n:0};
+  let s=0,m=0,n=0;
+  for(const c of ev.comps||[]){const v=r.niveaux?.[c.code];if(v==null)continue;n++;const k=+c.coef||1;s+=v*k;m+=3*k}
+  const calc=m?Math.round(s/m*20*2)/2:null;
+  const final=r.note_manuelle!=null?r.note_manuelle:calc;
+  return {calc,final,n};
+}
+const photoCount = r=>Object.values(r.photos||{}).reduce((a,l)=>a+l.length,0);
+
+/* --- sauvegarde automatique (résultats) --- */
+const pending = new Map(); let timer=null, inflight=0, errState=false;
+function setSync(){
+  const el=$('#syncst'); if(!el)return;
+  const busy=pending.size||inflight;
+  el.innerHTML = errState ? '<span class="dot err"></span>Hors connexion, nouvel essai…' : busy ? '<span class="dot busy"></span>Enregistrement…' : '<span class="dot"></span>'+(B&&B.mode==='local'?'Enregistré sur l’appareil':'Enregistré et synchronisé');
+  const ss=$('#savest'); if(ss) ss.textContent = errState ? 'Pas de réseau : la saisie sera envoyée au retour de la connexion (gardez la page ouverte).' : busy ? 'Enregistrement…' : 'Enregistré automatiquement';
+}
+function putRes(r){r.updated_at=new Date().toISOString();S.results[r.id]=r;pending.set(r.id,r);setSync();clearTimeout(timer);timer=setTimeout(flush,600)}
+async function flush(){
+  clearTimeout(timer); if(!pending.size)return;
+  const rows=[...pending.values()]; pending.clear(); inflight++; setSync();
+  try{await B.upsert('results',rows);errState=false}
+  catch(e){console.error(e);rows.forEach(r=>{if(!pending.has(r.id))pending.set(r.id,S.results[r.id])});errState=true;timer=setTimeout(flush,5000)}
+  finally{inflight--;setSync()}
+}
+async function save(t,row,msg){
+  inflight++;setSync();
+  try{await B.upsert(t,row);errState=false;if(msg)toast(msg);return true}
+  catch(e){console.error(e);toast("L'enregistrement a échoué. Vérifiez la connexion.");return false}
+  finally{inflight--;setSync()}
+}
+window.addEventListener('beforeunload',e=>{if(pending.size||inflight){e.preventDefault();e.returnValue=''}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)flush()});
+window.addEventListener('online',()=>flush());
+
+/* --- photos : liens temporaires en cache --- */
+const urlCache = {};
+async function urlsFor(paths){
+  const need=paths.filter(p=>!urlCache[p]||urlCache[p].exp<Date.now());
+  if(need.length){try{const o=await B.photoUrls(need);for(const p of need)urlCache[p]={u:o[p],exp:Date.now()+50*60e3}}catch(e){console.error(e)}}
+  const o={};paths.forEach(p=>o[p]=urlCache[p]?.u||null);return o;
+}
+async function hydrateImgs(){
+  const imgs=[...app.querySelectorAll('img[data-path]')]; if(!imgs.length)return;
+  const map=await urlsFor([...new Set(imgs.map(i=>i.dataset.path))]);
+  imgs.forEach(i=>{const u=map[i.dataset.path];if(u)i.src=u;else i.alt='Photo indisponible'});
+}
+
+/* ======================================================================
+   6. DÉMARRAGE ET CONNEXION
+   ====================================================================== */
+async function start(){
+  $('#etab').textContent=CONFIG.ETABLISSEMENT||'';
+  if(CLOUD && !window.supabase){app.innerHTML='<div class="empty">Le module de connexion n’a pas pu se charger. Vérifiez la connexion Internet puis rechargez la page.</div>';return}
+  B = CLOUD ? makeSupa() : makeLocal();
+  if(CLOUD){
+    const s=await B.session(); if(!s) return renderLogin();
+    $('#logout').hidden=false;
+    B.sb.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_OUT')location.reload()});
+  }
+  await loadData();
+}
+function renderLogin(err){
+  $('#top').hidden=true;
+  app.innerHTML=`<div class="login card stack">
+    <div><div class="pill">${esc(CONFIG.ETABLISSEMENT||'')}</div><h1 style="margin-top:10px">Notes Géo</h1><p class="muted" style="margin:6px 0 0">Accès réservé aux enseignants de la section. La connexion reste mémorisée sur cet appareil.</p></div>
+    <form id="loginf" class="stack">
+      <label class="f">Adresse e-mail<input id="lemail" type="email" autocomplete="username" required></label>
+      <label class="f">Mot de passe<input id="lpass" type="password" autocomplete="current-password" required></label>
+      ${err?`<div class="banner" style="margin:0">${esc(err)}</div>`:''}
+      <button class="btn primary" type="submit">Se connecter</button>
+    </form></div>`;
+  $('#loginf').addEventListener('submit',async e=>{
+    e.preventDefault(); const b=e.target.querySelector('button');b.disabled=true;b.textContent='Connexion…';
+    try{await B.signIn($('#lemail').value.trim(),$('#lpass').value);location.reload()}
+    catch(er){renderLogin('E-mail ou mot de passe incorrect.')}
+  });
+}
+async function loadData(){
+  try{
+    const d=await B.loadAll();
+    S.classes=d.classes; S.students=d.students; S.evaluations=d.evaluations;
+    S.results={}; d.results.forEach(r=>S.results[r.id]=r);
+    const fav=d.settings.find(x=>x.id==='favoris'); if(fav&&Array.isArray(fav.valeur)) S.fav=fav.valeur;
+  }catch(e){console.error(e);app.innerHTML=`<div class="empty">Impossible de charger les données (${esc(e.message||e)}). Vérifiez la connexion et les réglages Supabase, puis rechargez.</div>`;return}
+  if(!S.classes.find(c=>c.id===ui.classId)) ui.classId=S.classes[0]?.id||null;
+  if(!curEval()) ui.evalId=null;
+  $('#top').hidden=false;
+  render();
+}
+document.querySelector('.tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;flush();ui.tab=b.dataset.tab;ui.ficheId=null;ui.newEval=false;render();window.scrollTo(0,0)});
+$('#logout').addEventListener('click',async()=>{await flush();await B.signOut();location.reload()});
+
+/* ======================================================================
+   7. RENDU
+   ====================================================================== */
+function render(){
+  saveUi();
+  document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-current',t.dataset.tab===ui.tab?'page':'false'));
+  const demo = B.mode==='local' ? `<div class="banner"><strong>Mode démo :</strong> les données restent sur cet appareil. Renseignez les réglages Supabase en haut du fichier pour les partager.</div>` : '';
+  let html='';
+  if(ui.tab==='classes') html = ui.ficheId ? viewFiche() : viewClasses();
+  else if(ui.tab==='evaluer') html = viewEvaluer();
+  else if(ui.tab==='resultats') html = viewResultats();
+  else html = viewRef();
+  app.innerHTML = demo + html;
+  setSync(); hydrateImgs();
+}
+
+/* ---------------- CLASSES ---------------- */
+function viewClasses(){
+  const cls=S.classes.slice().sort((a,b)=>(a.nom||'').localeCompare(b.nom||'','fr'));
+  const c=S.classes.find(x=>x.id===ui.classId);
+  const studs=c?stuOf(c.id):[];
+  const hasSample=S.classes.some(x=>x.exemple);
+  return `<div class="row between" style="margin-bottom:14px"><h1>Classes</h1>
+    <div class="row">${hasSample?`<button class="btn ghost" data-a="delSample">Supprimer l’exemple</button>`:S.classes.length?'':`<button class="btn ghost" data-a="sample">Charger un exemple</button>`}</div></div>
+  <form class="row" id="newClass" style="margin-bottom:14px"><input class="inp" id="ncName" placeholder="Nom de la nouvelle classe (ex. 1re Bac Pro TGT)" style="flex:1;min-width:200px" required><button class="btn primary" type="submit">Créer la classe</button></form>
+  ${cls.length?`<div class="classlist">${cls.map(k=>`<button class="classcard" data-a="pickClass" data-id="${esc(k.id)}" aria-current="${k.id===ui.classId}"><b>${esc(k.nom)}</b><span class="muted">${stuOf(k.id).length} élèves · ${evalsOf(k.id).length} évaluation${evalsOf(k.id).length>1?'s':''}</span>${k.exemple?'<span class="pill" style="align-self:flex-start">Exemple</span>':''}</button>`).join('')}</div>`
+  :`<div class="empty"><strong>Aucune classe.</strong><br>Créez votre première classe ci-dessus, ou chargez l’exemple (6 élèves et une évaluation) pour découvrir l’appli.</div>`}
+  ${c?`<section class="card stack" style="margin-top:20px">
+    <div class="row between"><h2>${esc(c.nom)} · ${studs.length} élèves</h2>
+      <div class="row"><button class="btn" data-a="toggleImport">Importer une liste</button><button class="btn danger small" data-a="delClass">Supprimer la classe</button></div></div>
+    ${ui.import?`<div class="stack" style="background:var(--bg);border-radius:10px;padding:14px">
+      <label class="f">Collez la liste (une ligne par élève : Nom ; Prénom — ou Nom et Prénom séparés par une tabulation)<textarea id="impTxt" class="inp" placeholder="DUPONT;Léa&#10;MARTIN;Hugo"></textarea></label>
+      <div class="row"><button class="btn primary" data-a="doImport">Ajouter ces élèves</button><button class="btn" data-a="csvPick">Choisir un fichier CSV</button><button class="btn ghost" data-a="toggleImport">Fermer</button></div></div>`:''}
+    <form class="row" id="newStu"><input class="inp" id="nsNom" placeholder="Nom" style="flex:1;min-width:140px" required><input class="inp" id="nsPrenom" placeholder="Prénom" style="flex:1;min-width:140px"><button class="btn" type="submit">Ajouter l’élève</button></form>
+    <div>${studs.map(s=>`<div class="stu"><button class="name" data-a="fiche" data-id="${esc(s.id)}">${esc(fullName(s))}</button><button class="btn small ghost" data-a="delStu" data-id="${esc(s.id)}" aria-label="Retirer ${esc(fullName(s))}">Retirer</button></div>`).join('')||'<p class="muted">Aucun élève pour l’instant.</p>'}</div>
+    ${studs.length?'<p class="muted" style="margin:0;font-size:.85rem">Touchez un nom pour ouvrir sa fiche (progression par compétence et bilan par unité).</p>':''}
+  </section>`:''}`;
+}
+function parseList(txt){
+  return txt.split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map(l=>{
+    let p=l.split(/[;\t,]/).map(x=>x.trim()).filter(Boolean);
+    if(p.length<2){const w=l.split(/\s+/);const up=w.filter(x=>x===x.toUpperCase()&&/[A-ZÀ-Ý]/.test(x));p=up.length&&up.length<w.length?[up.join(' '),w.filter(x=>!up.includes(x)).join(' ')]:[w[0],w.slice(1).join(' ')]}
+    return {nom:p[0],prenom:p[1]||''};
+  }).filter(x=>x.nom && !/^nom$/i.test(x.nom));
+}
+async function addStudents(list){
+  const rows=list.map(x=>({id:uid(),class_id:ui.classId,nom:x.nom,prenom:x.prenom}));
+  if(!rows.length){toast('Aucun élève reconnu dans la liste.');return}
+  if(await save('students',rows,`${rows.length} élève${rows.length>1?'s':''} ajouté${rows.length>1?'s':''}`)){S.students.push(...rows);ui.import=false;render()}
+}
+
+/* ---------------- FICHE ÉLÈVE ---------------- */
+function viewFiche(){
+  const s=S.students.find(x=>x.id===ui.ficheId); if(!s){ui.ficheId=null;return viewClasses()}
+  const evs=evalsOf(s.class_id).slice().reverse();
+  const rows=evs.map(ev=>{const r=resOf(ev,s);return {ev,r,n:noteOf(ev,r)}});
+  const notes=rows.map(x=>x.n.final).filter(x=>x!=null);
+  const moy=notes.length?notes.reduce((a,b)=>a+b,0)/notes.length:null;
+  const hist={}; CODES.forEach(c=>hist[c]=[]);
+  rows.forEach(({ev,r})=>{(ev.comps||[]).forEach(c=>{const v=r.niveaux?.[c.code];if(v!=null&&!r.statut)hist[c.code].push({v,t:ev.titre,d:ev.date})})});
+  const unit=u=>{const all=u.comps.flatMap(c=>hist[c].map(h=>h.v));return all.length?all.reduce((a,b)=>a+b,0)/(3*all.length):null};
+  const cls=S.classes.find(c=>c.id===s.class_id);
+  return `<div class="row between" style="margin-bottom:14px"><button class="btn ghost" data-a="back">← Classe ${esc(cls?.nom||'')}</button></div>
+  <div class="split">
+   <div class="stack">
+    <h1>${esc(fullName(s))}</h1>
+    <section class="card stack"><h2>Évaluations</h2>
+     ${rows.length?`<div class="tblwrap" style="padding:0"><table class="res"><thead><tr><th>Date</th><th>Évaluation</th><th>Activité</th><th style="text-align:right">/20</th></tr></thead><tbody>
+      ${rows.map(({ev,r,n})=>`<tr class="click" data-a="openRes" data-ev="${esc(ev.id)}" data-st="${esc(s.id)}"><td class="n mono" style="font-weight:400">${esc(frDate(ev.date))}</td><td class="n">${esc(ev.titre)}${photoCount(r)?` <span class="pill">${photoCount(r)} photo${photoCount(r)>1?'s':''}</span>`:''}</td><td>${esc(ev.activite)}</td><td class="note">${r.statut==='absent'?'Abs.':r.statut==='non_rendu'?'N.R.':fmt(n.final)}</td></tr>`).join('')}
+     </tbody></table></div>`:'<p class="muted">Pas encore d’évaluation pour cette classe.</p>'}
+    </section>
+    <section class="card stack"><h2>Progression par compétence</h2>
+     <div class="prog">${CODES.map(c=>`<div><span class="code">${c}</span> ${esc(COMPS[c][0])}</div><div class="marks">${hist[c].length?hist[c].map(h=>`<span class="cell c${h.v}" title="${esc(h.t)} · ${esc(frDate(h.d))}">${LEVELS[h.v].a}</span>`).join(''):'<span class="muted" style="font-size:.8rem">non évaluée</span>'}</div>`).join('')}</div>
+    </section>
+   </div>
+   <aside class="stack">
+    <div class="notebox"><span class="muted" style="font-size:.9rem">Moyenne des évaluations</span><span class="big">${fmt(moy)}<small> /20</small></span><span class="muted" style="font-size:.85rem">${notes.length} note${notes.length>1?'s':''}</span></div>
+    <section class="card stack"><h2>Bilan par unité</h2>
+     ${UNITS.map(u=>{const p=unit(u);return `<div class="stack" style="gap:4px"><div class="row between"><strong>${u.id}</strong><span class="mono">${p==null?'–':fmt(p*20)+' /20'}</span></div><span class="muted" style="font-size:.82rem">${esc(u.name)}</span><div class="bar"><i style="width:${p==null?0:Math.round(p*100)}%"></i></div></div>`}).join('')}
+     <p class="muted" style="margin:0;font-size:.8rem">Moyenne des niveaux obtenus sur les compétences de l’unité, ramenée sur 20.</p>
+    </section>
+   </aside>
+  </div>`;
+}
+
+/* ---------------- ÉVALUER ---------------- */
+function viewEvaluer(){
+  if(!S.classes.length) return `<h1>Évaluer</h1><div class="empty" style="margin-top:14px">Créez d’abord une classe dans l’onglet Classes.</div>`;
+  const ev=curEval();
+  if(ui.newEval || !ev) return viewEvalPicker();
+  const studs=stuOf(ev.class_id);
+  if(!studs.length) return `<button class="btn ghost" data-a="changeEval">← Changer d’évaluation</button><div class="empty" style="margin-top:14px">Cette classe n’a pas encore d’élèves.</div>`;
+  ui.stuIdx=Math.max(0,Math.min(ui.stuIdx,studs.length-1));
+  const st=studs[ui.stuIdx], r=resOf(ev,st), n=noteOf(ev,r), act=actOf(ev.activite), cls=S.classes.find(c=>c.id===ev.class_id);
+  const pc=photoCount(r);
+  return `<div class="row between" style="margin-bottom:8px">
+     <button class="btn ghost" data-a="changeEval">← ${esc(ev.titre)}</button>
+     <span class="muted" style="font-size:.88rem">${esc(cls?.nom||'')} · ${esc(frDate(ev.date))} · ${esc(ev.type||'')} · Activité ${esc(ev.activite)}${act?' · '+act.unit:''}</span></div>
+  <div class="who" style="margin-bottom:14px">
+    <div class="nm">${esc(fullName(st))}</div>
+    <div class="nav"><button data-a="prevStu" aria-label="Élève précédent" ${ui.stuIdx===0?'disabled':''}>${IC.prev}</button><span class="mono">${ui.stuIdx+1} / ${studs.length}</span><button class="next" data-a="nextStu" aria-label="Élève suivant" ${ui.stuIdx>=studs.length-1?'disabled':''}>${IC.next}</button></div>
+  </div>
+  <div class="split">
+   <div>
+    ${r.statut?`<div class="banner">${r.statut==='absent'?'Élève noté absent':'Travail non rendu'} : aucune note n’est calculée. Touchez à nouveau le bouton pour annuler.</div>`:''}
+    ${(ev.comps||[]).map(c=>compRow(ev,st,r,c)).join('')}
+   </div>
+   <aside class="stack">
+    <div class="notebox"><span class="muted" style="font-size:.9rem">${r.note_manuelle!=null?'Note ajustée':'Note calculée'}</span>
+      <span class="big" id="bignote">${r.statut==='absent'?'Abs.':r.statut==='non_rendu'?'N.R.':fmt(n.final)}<small> /20</small></span>
+      <span class="muted" style="font-size:.85rem">${n.n} / ${(ev.comps||[]).length} compétences évaluées${r.note_manuelle!=null&&n.calc!=null?' · calculée : '+fmt(n.calc):''}</span>
+      <label class="f" style="margin-top:8px">Ajuster la note à la main<input id="override" class="mono" inputmode="decimal" placeholder="vide = note calculée" value="${r.note_manuelle!=null?esc(String(r.note_manuelle).replace('.',',')):''}"></label>
+    </div>
+    <label class="f">Commentaire<textarea id="com" class="inp" rows="4">${esc(r.commentaire||'')}</textarea></label>
+    <div class="chips">${S.fav.map((f,i)=>`<span class="chip"><button class="chip" style="border:0;min-height:auto;padding:0" data-a="addFav" data-i="${i}">+ ${esc(f)}</button><button class="x" data-a="delFav" data-i="${i}" aria-label="Retirer ce commentaire favori">×</button></span>`).join('')}</div>
+    <button class="btn small ghost" data-a="saveFav" style="align-self:flex-start">☆ Garder ce commentaire en favori</button>
+    <div class="row"><button class="btn toggle" style="flex:1" data-a="statut" data-v="absent" aria-pressed="${r.statut==='absent'}">Absent</button><button class="btn toggle" style="flex:1" data-a="statut" data-v="non_rendu" aria-pressed="${r.statut==='non_rendu'}">Non rendu</button></div>
+    <div class="card stack" style="padding:12px 14px;gap:4px"><strong style="font-size:.9rem">Photos de terrain</strong><span class="muted" style="font-size:.85rem">${pc?`${pc} photo${pc>1?'s':''} sur ${Object.keys(r.photos||{}).filter(k=>r.photos[k].length).join(', ')}. Elles figurent dans la fiche PDF.`:'Touchez l’appareil photo d’une compétence pour joindre une preuve prise sur le terrain.'}</span></div>
+    <button class="btn" data-a="pdfOne">${IC.dl}Fiche PDF de l’élève</button>
+    <span class="savestate" id="savest">Enregistré automatiquement</span>
+   </aside>
+  </div>`;
+}
+function compRow(ev,st,r,c){
+  const [name,crit]=COMPS[c.code]; const v=r.niveaux?.[c.code]; const ph=(r.photos?.[c.code])||[]; const up=uploading[r.id+'|'+c.code]||0;
+  const open=ui.open===c.code;
+  return `<div class="comp" id="comp-${c.code}">
+   <div class="cline">
+    <button class="ctitle" data-a="toggleCrit" data-c="${c.code}" aria-expanded="${open}"><span class="t"><span class="code">${c.code}</span> ${esc(name)}${(+c.coef||1)!==1?` <span class="pill">coef ${esc(c.coef)}</span>`:''}</span><span class="h">${open?'Masquer':'Voir'} les ${crit.length} critères</span></button>
+    ${LEVELS.map((l,i)=>`<button class="lv" data-a="lvl" data-c="${c.code}" data-v="${i}" aria-pressed="${v===i}" ${r.statut?'disabled':''}>${l.h||esc(l.n)}</button>`).join('')}
+    <button class="cam" data-a="photo" data-c="${c.code}" aria-label="Prendre une photo pour ${c.code}${ph.length?' ('+ph.length+' déjà)':''}">${IC.cam}${ph.length?`<span class="badge">${ph.length}</span>`:''}</button>
+   </div>
+   ${open?`<ul class="crit">${crit.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
+   ${ph.length||up?`<div class="thumbs">${ph.map((p,i)=>`<button class="thumb" data-a="viewPhoto" data-c="${c.code}" data-i="${i}" aria-label="Agrandir la photo ${i+1} de ${c.code}"><img data-path="${esc(p)}" alt=""></button>`).join('')}${Array.from({length:up},()=>'<div class="thumb up" aria-label="Envoi en cours"></div>').join('')}</div>`:''}
+  </div>`;
+}
+function viewEvalPicker(){
+  const cid=ui.classId||S.classes[0].id;
+  const list=evalsOf(cid);
+  const act=actOf(ui.draftAct||'1.1');
+  const sel=ui.draftComps||Object.fromEntries(act.comps.map(c=>[c,1]));
+  return `<h1>Évaluer</h1>
+  <div class="row" style="margin:14px 0"><label class="f" style="flex:1;min-width:220px">Classe<select id="evClass" class="inp">${S.classes.map(c=>`<option value="${esc(c.id)}" ${c.id===cid?'selected':''}>${esc(c.nom)}</option>`).join('')}</select></label></div>
+  <div class="split">
+   <section class="stack">
+    <h2>Reprendre une évaluation</h2>
+    ${list.length?list.map(e=>{const studs=stuOf(cid);const done=studs.filter(s=>{const r=resOf(e,s);return r.statut||noteOf(e,r).n}).length;return `<button class="classcard" data-a="openEval" data-id="${esc(e.id)}" style="min-height:auto"><b>${esc(e.titre)}</b><span class="muted">${esc(frDate(e.date))} · ${esc(e.type||'')} · Activité ${esc(e.activite)} · ${done}/${studs.length} élèves notés</span></button>`}).join(''):'<div class="empty">Aucune évaluation pour cette classe. Créez la première à droite.</div>'}
+   </section>
+   <section class="card stack">
+    <h2>Nouvelle évaluation</h2>
+    <label class="f">Titre<input id="neTitre" placeholder="TP nivellement direct" value="${esc(ui.draftTitre||'')}"></label>
+    <div class="grid2"><label class="f">Date<input id="neDate" type="date" value="${esc(ui.draftDate||today())}"></label>
+    <label class="f">Type<select id="neType">${TYPES.map(t=>`<option ${t===(ui.draftType||TYPES[0])?'selected':''}>${t}</option>`).join('')}</select></label></div>
+    <label class="f">Activité professionnelle<select id="neAct">${ACTS.map(a=>`<option value="${a.id}" ${a.id===act.id?'selected':''}>Activité ${a.id} – ${esc(a.name)}</option>`).join('')}</select></label>
+    <div class="stack" style="gap:6px"><span style="font-size:.85rem;font-weight:700;color:var(--muted)">Compétences évaluées et coefficients</span>
+     ${CODES.map(c=>`<div class="row" style="gap:8px;flex-wrap:nowrap"><input type="checkbox" id="nc-${c}" data-cc="${c}" ${sel[c]!=null?'checked':''} style="width:22px;height:22px;flex:none"><label for="nc-${c}" style="flex:1;min-width:0;font-size:.9rem"><span class="code">${c}</span> ${esc(COMPS[c][0])}${act.comps.includes(c)?'':' <span class="muted">(hors activité)</span>'}</label><input class="inp mono" data-coef="${c}" inputmode="decimal" value="${esc(sel[c]??1)}" aria-label="Coefficient ${c}" style="width:64px;min-height:38px;padding:4px 8px" ${sel[c]==null?'disabled':''}></div>`).join('')}
+    </div>
+    <button class="btn primary" data-a="createEval">Créer et commencer à noter</button>
+   </section>
+  </div>`;
+}
+
+/* ---------------- RÉSULTATS ---------------- */
+function viewResultats(){
+  const cid=ui.classId||S.classes[0]?.id;
+  if(!cid) return `<h1>Résultats</h1><div class="empty" style="margin-top:14px">Créez d’abord une classe.</div>`;
+  const list=evalsOf(cid);
+  let ev=curEval(); if(!ev||ev.class_id!==cid) ev=list[0]||null;
+  const head=`<h1>Résultats</h1><div class="row" style="margin:14px 0">
+    <label class="f" style="flex:1;min-width:200px">Classe<select id="resClass" class="inp">${S.classes.map(c=>`<option value="${esc(c.id)}" ${c.id===cid?'selected':''}>${esc(c.nom)}</option>`).join('')}</select></label>
+    <label class="f" style="flex:2;min-width:240px">Évaluation<select id="resEval" class="inp">${list.map(e=>`<option value="${esc(e.id)}" ${ev&&e.id===ev.id?'selected':''}>${esc(frDate(e.date))} · ${esc(e.titre)}</option>`).join('')||'<option>Aucune évaluation</option>'}</select></label></div>`;
+  if(!ev) return head+'<div class="empty">Aucune évaluation pour cette classe.</div>';
+  const studs=stuOf(cid), comps=ev.comps||[];
+  const data=studs.map(s=>{const r=resOf(ev,s);return {s,r,n:noteOf(ev,r)}});
+  const notes=data.map(d=>d.n.final).filter(x=>x!=null);
+  const moy=notes.length?notes.reduce((a,b)=>a+b,0)/notes.length:null;
+  const abs=data.filter(d=>d.r.statut==='absent').length, nr=data.filter(d=>d.r.statut==='non_rendu').length;
+  const alerts=comps.map(c=>{const g=data.filter(d=>!d.r.statut&&d.r.niveaux?.[c.code]!=null);const low=g.filter(d=>d.r.niveaux[c.code]<=1).length;return {c,g:g.length,low}}).filter(x=>x.g&&x.low>x.g/3);
+  return head+`<div class="row between" style="margin-bottom:12px"><span class="muted">${esc(ev.type||'')} · Activité ${esc(ev.activite)} – ${esc(actOf(ev.activite)?.name||'')}</span>
+   <div class="row"><button class="btn" data-a="csv">${IC.dl}Export Pronote (CSV)</button><button class="btn primary" data-a="pdfAll">${IC.dl}Fiches PDF de la classe</button></div></div>
+  <div class="split">
+   <div class="tblwrap"><table class="res"><thead><tr><th>Élève</th>${comps.map(c=>`<th title="${esc(COMPS[c.code][0])}">${c.code}</th>`).join('')}<th>Photos</th><th style="text-align:right">/20</th></tr></thead><tbody>
+    ${data.map(({s,r,n})=>`<tr class="click" data-a="openRes" data-ev="${esc(ev.id)}" data-st="${esc(s.id)}"><td class="n">${esc(fullName(s))}</td>${comps.map(c=>{const v=r.statut?null:r.niveaux?.[c.code];return `<td><div class="cell ${v!=null?'c'+v:''}">${v!=null?LEVELS[v].a:'–'}</div></td>`}).join('')}<td class="mono" style="text-align:center;color:var(--muted)">${photoCount(r)||''}</td><td class="note">${r.statut==='absent'?'Abs.':r.statut==='non_rendu'?'N.R.':fmt(n.final)}</td></tr>`).join('')}
+   </tbody></table>
+   <div class="legend">${LEVELS.map((l,i)=>`<span><i style="background:var(--l${i})"></i>${l.a} = ${l.n}</span>`).join('')}</div></div>
+   <aside class="stack">
+    <div class="notebox stats"><span class="muted" style="font-size:.9rem">Moyenne de la classe</span><span class="big">${fmt(moy)}</span>
+     <div class="grid2" style="gap:8px;margin-top:6px"><div><span class="muted" style="font-size:.85rem">Min</span><div class="mono" style="font-size:1.4rem">${notes.length?fmt(Math.min(...notes)):'–'}</div></div><div><span class="muted" style="font-size:.85rem">Max</span><div class="mono" style="font-size:1.4rem">${notes.length?fmt(Math.max(...notes)):'–'}</div></div></div>
+     <span class="muted" style="font-size:.85rem">${notes.length} noté${notes.length>1?'s':''}${abs?` · ${abs} absent${abs>1?'s':''}`:''}${nr?` · ${nr} non rendu${nr>1?'s':''}`:''}</span></div>
+    ${alerts.length?`<div class="alert"><strong>À retravailler</strong>${alerts.map(a=>`<span><span class="code">${a.c.code}</span> ${esc(COMPS[a.c.code][0])} : ${a.low} élève${a.low>1?'s':''} sur ${a.g} en Non acquis ou Fragile</span>`).join('')}</div>`:''}
+   </aside>
+  </div>`;
+}
+
+/* ---------------- RÉFÉRENTIEL ---------------- */
+function viewRef(){
+  const rowsA=ACTS.map((a,i)=>`<tr class="${i===0||ACTS[i-1].pole!==a.pole?'pole':''}"><td><strong>Activité ${a.id} – ${esc(a.name)}</strong>${i===0||ACTS[i-1].pole!==a.pole?`<div class="muted" style="font-size:.78rem">${esc(a.pole)}</div>`:''}</td>${CODES.map(c=>`<td>${a.comps.includes(c)?'<span class="dot" style="background:var(--accent)" aria-label="mobilisée"></span>':''}</td>`).join('')}</tr>`).join('');
+  const rowsU=UNITS.map((u,i)=>`<tr class="unit ${i===0?'pole':''}"><td>${u.id} : ${esc(u.name)}${i===0?'<div class="muted" style="font-size:.78rem">Unités certificatives</div>':''}</td>${CODES.map(c=>`<td>${u.comps.includes(c)?'<span class="dot" style="background:#1D4E89" aria-label="incluse"></span>':''}</td>`).join('')}</tr>`).join('');
+  return `<span class="muted">Arrêté du 6 avril 2024 · Annexe III, référentiel de compétences</span><h1>Bac Pro Géomètre : activités et compétences</h1>
+  <section class="card" style="margin-top:16px;overflow-x:auto"><table class="matrix"><thead><tr><th style="text-align:left">Activité professionnelle</th>${CODES.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${rowsA}${rowsU}</tbody></table></section>
+  <h2 style="margin:22px 0 12px">Compétences et critères d’évaluation</h2>
+  <div class="refcards">${CODES.map(c=>`<article class="card stack" style="gap:8px"><div class="row between" style="flex-wrap:nowrap;align-items:baseline"><h3 style="font-size:1rem"><span class="code">${c}</span> ${esc(COMPS[c][0])}</h3><span class="pill">${UNITS.find(u=>u.comps.includes(c)).id}</span></div><span class="muted" style="font-size:.82rem">Activités : ${ACTS.filter(a=>a.comps.includes(c)).map(a=>a.id).join(', ')}</span><ul>${COMPS[c][1].map(x=>`<li>${esc(x)}</li>`).join('')}</ul></article>`).join('')}</div>`;
+}
+
+/* ======================================================================
+   8. ACTIONS
+   ====================================================================== */
+let photoCtx=null; const uploading={};
+function curCtx(){const ev=curEval();const studs=stuOf(ev.class_id);const st=studs[ui.stuIdx];return {ev,st,r:structuredClone(resOf(ev,st))}}
+function rerenderKeep(){const y=window.scrollY;render();window.scrollTo(0,y)}
+function readDraft(){
+  ui.draftTitre=$('#neTitre')?.value; ui.draftDate=$('#neDate')?.value; ui.draftType=$('#neType')?.value;
+  const d={}; app.querySelectorAll('[data-cc]').forEach(cb=>{if(cb.checked){d[cb.dataset.cc]=num(app.querySelector(`[data-coef="${cb.dataset.cc}"]`).value)||1}}); ui.draftComps=d;
+}
+
+const A = {
+  async sample(){
+    const cid=uid(); const names=[['BERNARD','Tom'],['DUBOIS','Inès'],['MARTIN','Léa'],['MOREAU','Hugo'],['PETIT','Sarah'],['ROUX','Nathan']];
+    const studs=names.map(([n,p])=>({id:uid(),class_id:cid,nom:n,prenom:p}));
+    const ev={id:uid(),class_id:cid,titre:'Préparation d’un levé (exemple)',date:today(),type:'TP terrain',activite:'1.1',comps:ACTS[0].comps.map(c=>({code:c,coef:1})),created_at:new Date().toISOString()};
+    const L=[[2,2,1,2,2,2],[3,3,2,3,3,3],[3,2,1,2,3,2],[1,1,0,1,2,1],[2,2,1,1,3,2],null];
+    const res=studs.map((s,i)=>({id:ev.id+'_'+s.id,evaluation_id:ev.id,student_id:s.id,niveaux:L[i]?Object.fromEntries(ev.comps.map((c,j)=>[c.code,L[i][j]])):{},statut:L[i]?null:'absent',commentaire:i===1?'Bonne autonomie.':'',note_manuelle:null,photos:{},updated_at:new Date().toISOString()}));
+    if(!await save('classes',{id:cid,nom:'Exemple – 1re Bac Pro',exemple:true,created_at:new Date().toISOString()}))return;
+    await save('students',studs); await save('evaluations',ev); await save('results',res,'Exemple chargé');
+    S.classes.push({id:cid,nom:'Exemple – 1re Bac Pro',exemple:true}); S.students.push(...studs); S.evaluations.push(ev); res.forEach(r=>S.results[r.id]=r);
+    ui.classId=cid; render();
+  },
+  async delSample(){const c=S.classes.find(x=>x.exemple);if(c){ui.classId=c.id;await A.delClass(true)}},
+  pickClass(t){ui.classId=t.dataset.id;ui.import=false;render()},
+  toggleImport(){ui.import=!ui.import;render()},
+  async doImport(){await addStudents(parseList($('#impTxt').value))},
+  csvPick(){$('#csvIn').value='';$('#csvIn').click()},
+  async delStu(t){
+    const s=S.students.find(x=>x.id===t.dataset.id);
+    if(!await confirmBox('Retirer l’élève ?',`${fullName(s)} et toutes ses notes et photos seront supprimés.`,'Retirer'))return;
+    const rs=Object.values(S.results).filter(r=>r.student_id===s.id);
+    const paths=rs.flatMap(r=>Object.values(r.photos||{}).flat());
+    try{await B.remove('results',rs.map(r=>r.id));await B.remove('students',s.id);await B.deletePhotos(paths)}catch(e){toast('La suppression a échoué.');return}
+    rs.forEach(r=>delete S.results[r.id]); S.students=S.students.filter(x=>x.id!==s.id); render(); toast('Élève retiré');
+  },
+  async delClass(silent){
+    const c=S.classes.find(x=>x.id===ui.classId);
+    if(silent!==true && !await confirmBox('Supprimer la classe ?',`${c.nom} : élèves, évaluations, notes et photos seront supprimés pour tous les enseignants.`,'Supprimer'))return;
+    const evs=S.evaluations.filter(e=>e.class_id===c.id).map(e=>e.id), sts=S.students.filter(s=>s.class_id===c.id).map(s=>s.id);
+    const rs=Object.values(S.results).filter(r=>evs.includes(r.evaluation_id));
+    const paths=rs.flatMap(r=>Object.values(r.photos||{}).flat());
+    try{await B.remove('results',rs.map(r=>r.id));await B.remove('evaluations',evs);await B.remove('students',sts);await B.remove('classes',c.id);await B.deletePhotos(paths)}catch(e){console.error(e);toast('La suppression a échoué.');return}
+    rs.forEach(r=>delete S.results[r.id]); S.evaluations=S.evaluations.filter(e=>!evs.includes(e.id)); S.students=S.students.filter(s=>!sts.includes(s.id)); S.classes=S.classes.filter(x=>x.id!==c.id);
+    if(evs.includes(ui.evalId))ui.evalId=null; ui.classId=S.classes[0]?.id||null; render(); toast('Classe supprimée');
+  },
+  fiche(t){ui.ficheId=t.dataset.id;render();window.scrollTo(0,0)},
+  back(){ui.ficheId=null;render()},
+  openRes(t){flush();const ev=S.evaluations.find(e=>e.id===t.dataset.ev);ui.evalId=ev.id;ui.classId=ev.class_id;ui.stuIdx=stuOf(ev.class_id).findIndex(s=>s.id===t.dataset.st);ui.tab='evaluer';ui.ficheId=null;ui.newEval=false;ui.open=null;render();window.scrollTo(0,0)},
+  openEval(t){ui.evalId=t.dataset.id;ui.stuIdx=0;ui.newEval=false;ui.open=null;render();window.scrollTo(0,0)},
+  changeEval(){flush();ui.newEval=true;ui.draftComps=null;ui.draftAct=null;ui.draftTitre='';render()},
+  async createEval(){
+    readDraft();
+    const titre=(ui.draftTitre||'').trim(); if(!titre){toast('Donnez un titre à l’évaluation.');$('#neTitre').focus();return}
+    const comps=CODES.filter(c=>ui.draftComps[c]!=null).map(c=>({code:c,coef:ui.draftComps[c]}));
+    if(!comps.length){toast('Cochez au moins une compétence.');return}
+    const ev={id:uid(),class_id:$('#evClass').value,titre,date:ui.draftDate||today(),type:ui.draftType,activite:$('#neAct').value,comps,created_at:new Date().toISOString()};
+    if(!await save('evaluations',ev,'Évaluation créée'))return;
+    S.evaluations.push(ev); ui.evalId=ev.id; ui.classId=ev.class_id; ui.stuIdx=0; ui.newEval=false; ui.draftComps=null; ui.draftTitre=''; render(); window.scrollTo(0,0);
+  },
+  prevStu(){flush();ui.stuIdx--;ui.open=null;render();window.scrollTo(0,0)},
+  nextStu(){flush();ui.stuIdx++;ui.open=null;render();window.scrollTo(0,0)},
+  toggleCrit(t){ui.open=ui.open===t.dataset.c?null:t.dataset.c;rerenderKeep()},
+  lvl(t){const {r}=curCtx();const v=+t.dataset.v,c=t.dataset.c;r.niveaux=r.niveaux||{};if(r.niveaux[c]===v)delete r.niveaux[c];else r.niveaux[c]=v;putRes(r);rerenderKeep()},
+  statut(t){const {r}=curCtx();r.statut=r.statut===t.dataset.v?null:t.dataset.v;putRes(r);rerenderKeep()},
+  addFav(t){const {r}=curCtx();const f=S.fav[+t.dataset.i];r.commentaire=(r.commentaire?r.commentaire.trim()+' ':'')+f;putRes(r);const ta=$('#com');if(ta)ta.value=r.commentaire},
+  async delFav(t){S.fav.splice(+t.dataset.i,1);await save('settings',{id:'favoris',valeur:S.fav});rerenderKeep()},
+  async saveFav(){const v=($('#com').value||'').trim();if(!v){toast('Écrivez d’abord un commentaire.');return}if(S.fav.includes(v)){toast('Déjà dans les favoris.');return}S.fav.push(v);await save('settings',{id:'favoris',valeur:S.fav},'Ajouté aux favoris');rerenderKeep()},
+  photo(t){photoCtx={...curCtx(),code:t.dataset.c};const fi=$('#photoIn');fi.value='';fi.click()},
+  async viewPhoto(t){
+    const {r}=curCtx(); const code=t.dataset.c, path=r.photos[code][+t.dataset.i]; const u=(await urlsFor([path]))[path];
+    const ov=document.createElement('div');ov.className='ov';ov.setAttribute('role','dialog');
+    ov.innerHTML=`${u?`<img src="${esc(u)}" alt="Photo ${code}">`:'<p style="color:#fff">Photo indisponible</p>'}<div class="row" style="justify-content:center"><button class="btn danger" data-x="del">Supprimer la photo</button><button class="btn primary" data-x="close">Fermer</button></div>`;
+    document.body.appendChild(ov); ov.querySelector('[data-x="close"]').focus();
+    ov.addEventListener('click',async e=>{
+      const b=e.target.closest('[data-x]'); if(!b&&e.target!==ov)return; ov.remove();
+      if(b&&b.dataset.x==='del'){const c=curCtx();c.r.photos[code]=c.r.photos[code].filter(p=>p!==path);putRes(c.r);rerenderKeep();await flush();try{await B.deletePhotos([path])}catch(er){}}
+    });
+  },
+  async csv(){
+    const cid=$('#resClass').value, ev=S.evaluations.find(e=>e.id===$('#resEval').value); if(!ev)return;
+    const lines=['Nom;Prénom;Note'].concat(stuOf(cid).map(s=>{const r=resOf(ev,s),n=noteOf(ev,r);return [s.nom,s.prenom,r.statut==='absent'?'Abs':r.statut==='non_rendu'?'NR':n.final==null?'':String(n.final).replace('.',',')].map(x=>String(x).replace(/;/g,',')).join(';')}));
+    const blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
+    downloadBlob(blob,`${safeName(S.classes.find(c=>c.id===cid)?.nom)} - ${safeName(ev.titre)} - ${ev.date}.csv`);
+  },
+  async pdfAll(t){const ev=S.evaluations.find(e=>e.id===$('#resEval').value);if(ev)await makePdf(ev,stuOf(ev.class_id),t)},
+  async pdfOne(t){const {ev,st}=curCtx();await flush();await makePdf(ev,[st],t)}
+};
+app.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t||t.disabled)return;const f=A[t.dataset.a];if(f){e.preventDefault();f(t)}});
+app.addEventListener('submit',async e=>{
+  e.preventDefault();
+  if(e.target.id==='newClass'){const nom=$('#ncName').value.trim();if(!nom)return;const c={id:uid(),nom,exemple:false,created_at:new Date().toISOString()};if(await save('classes',c,'Classe créée')){S.classes.push(c);ui.classId=c.id;render()}}
+  if(e.target.id==='newStu'){const nom=$('#nsNom').value.trim();if(!nom)return;await addStudents([{nom,prenom:$('#nsPrenom').value.trim()}]);$('#nsNom')?.focus()}
+});
+app.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.id==='evClass'){readDraft();ui.classId=t.value;render()}
+  else if(t.id==='neAct'){readDraft();ui.draftAct=t.value;ui.draftComps=Object.fromEntries(actOf(t.value).comps.map(c=>[c,1]));render()}
+  else if(t.dataset.cc){const inp=app.querySelector(`[data-coef="${t.dataset.cc}"]`);inp.disabled=!t.checked}
+  else if(t.id==='resClass'){ui.classId=t.value;ui.evalId=evalsOf(t.value)[0]?.id||null;render()}
+  else if(t.id==='resEval'){ui.evalId=t.value;render()}
+  else if(t.id==='override'){const {r}=curCtx();const v=t.value.trim();const n=num(v);if(v&&(n==null||n<0||n>20)){toast('Entrez une note entre 0 et 20, ou laissez vide.');return}r.note_manuelle=v?n:null;putRes(r);rerenderKeep()}
+});
+app.addEventListener('input',e=>{if(e.target.id==='com'){const {r}=curCtx();r.commentaire=e.target.value;putRes(r)}});
+$('#csvIn').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;let txt=await f.text();if(txt.includes(' ')){const buf=await f.arrayBuffer();txt=new TextDecoder('windows-1252').decode(buf)}await addStudents(parseList(txt))});
+$('#photoIn').addEventListener('change',async e=>{
+  const files=[...e.target.files]; const ctx=photoCtx; if(!files.length||!ctx)return;
+  const key=ctx.r.id+'|'+ctx.code; uploading[key]=(uploading[key]||0)+files.length; if(ui.tab==='evaluer')rerenderKeep();
+  for(const file of files){
+    try{
+      const blob=await shrink(file);
+      const path=`${ctx.ev.id}/${ctx.st.id}/${ctx.code}/${uid()}.jpg`;
+      await B.uploadPhoto(path,blob);
+      const r=structuredClone(resOf(ctx.ev,ctx.st)); r.photos=r.photos||{}; r.photos[ctx.code]=(r.photos[ctx.code]||[]).concat(path); putRes(r);
+    }catch(er){console.error(er);toast(/exceed|size|quota/i.test(er?.message||'')?'Espace de stockage des photos plein.':'La photo n’a pas pu être envoyée. Vérifiez la connexion.')}
+    finally{uploading[key]--; if(ui.tab==='evaluer')rerenderKeep()}
+  }
+});
+
+/* ======================================================================
+   9. EXPORTS
+   ====================================================================== */
+const safeName=s=>String(s||'').replace(/[\\/:*?"<>|]/g,'').trim().slice(0,60);
+function downloadBlob(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000)}
+const pdfSafe=s=>String(s??'').replace(/[’‘]/g,"'").replace(/[“”]/g,'"').replace(/œ/g,'oe').replace(/Œ/g,'OE').replace(/…/g,'...').replace(/[–—]/g,'-').replace(/[^\x00-\xFF]/g,'');
+async function imgData(url){
+  if(url.startsWith('data:')){const im=new Image();await new Promise((r,j)=>{im.onload=r;im.onerror=j;im.src=url});return {d:url,w:im.width,h:im.height}}
+  const b=await (await fetch(url)).blob(); const bmp=await createImageBitmap(b);
+  const k=Math.min(1,1000/Math.max(bmp.width,bmp.height)); const cv=document.createElement('canvas');cv.width=Math.round(bmp.width*k);cv.height=Math.round(bmp.height*k);
+  cv.getContext('2d').drawImage(bmp,0,0,cv.width,cv.height); return {d:cv.toDataURL('image/jpeg',.8),w:cv.width,h:cv.height};
+}
+async function makePdf(ev,studs,btn){
+  if(!window.jspdf){toast('Le module PDF n’a pas pu se charger.');return}
+  const lbl=btn.innerHTML; btn.disabled=true; btn.textContent='Préparation du PDF…';
+  try{
+    const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:'mm',format:'a4'});
+    const W=210,M=14,ink=[28,43,57],mut=[90,102,114],acc=[184,65,12],blue=[47,109,181];
+    const LC=[[242,139,130],[255,204,128],[168,209,240],[59,120,194]];
+    const cls=S.classes.find(c=>c.id===ev.class_id), act=actOf(ev.activite);
+    const T=(s,x,y,o)=>doc.text(pdfSafe(s),x,y,o);
+    const allPaths=studs.flatMap(s=>Object.values(resOf(ev,s).photos||{}).flat());
+    const urls=await urlsFor(allPaths);
+    for(let si=0;si<studs.length;si++){
+      const s=studs[si]; if(si>0)doc.addPage(); let y=M+4;
+      const need=h=>{if(y+h>297-M){doc.addPage();y=M+4}};
+      const r=resOf(ev,s), n=noteOf(ev,r);
+      doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...mut);T(`${CONFIG.ETABLISSEMENT||''} · ${cls?.nom||''}`,M,y);
+      y+=8;doc.setFont('helvetica','bold');doc.setFontSize(18);doc.setTextColor(...ink);T(fullName(s),M,y);
+      doc.setFontSize(24);doc.setTextColor(...blue);T(r.statut==='absent'?'Absent':r.statut==='non_rendu'?'Non rendu':fmt(n.final)+' / 20',W-M,y,{align:'right'});
+      y+=7;doc.setFont('helvetica','normal');doc.setFontSize(10.5);doc.setTextColor(...ink);T(`${ev.titre} · ${frDate(ev.date)} · ${ev.type||''}`,M,y);
+      y+=5;doc.setTextColor(...mut);doc.setFontSize(9.5);T(`Activité ${ev.activite} - ${act?.name||''} · Unité ${act?.unit||''}`,M,y);
+      if(r.note_manuelle!=null&&n.calc!=null){y+=5;T(`Note ajustée par l'enseignant (calculée : ${fmt(n.calc)})`,M,y)}
+      y+=8;doc.setDrawColor(...ink);doc.setLineWidth(.5);doc.line(M,y,W-M,y);y+=6;
+      doc.setFontSize(8.5);doc.setTextColor(...mut);doc.setFont('helvetica','bold');T('Compétence',M,y);T('Coef',W-M-52,y);T('Niveau',W-M-38,y);y+=5;
+      for(const c of ev.comps||[]){
+        const lines=doc.splitTextToSize(pdfSafe(`${c.code}  ${COMPS[c.code][0]}`),W-2*M-62);
+        need(lines.length*4.6+3);
+        doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(...ink);doc.text(lines,M,y);
+        T(String(c.coef||1),W-M-50,y);
+        const v=r.statut?null:r.niveaux?.[c.code];
+        if(v!=null){doc.setFillColor(...LC[v]);doc.roundedRect(W-M-40,y-3.8,40,5.6,1.2,1.2,'F');doc.setTextColor(...(v===3?[255,255,255]:ink));doc.setFont('helvetica','bold');doc.setFontSize(9);T(LEVELS[v].n,W-M-20,y,{align:'center'})}
+        else{doc.setTextColor(...mut);T('-',W-M-20,y,{align:'center'})}
+        y+=lines.length*4.6+2.4;
+      }
+      if((r.commentaire||'').trim()){y+=3;need(14);doc.setFont('helvetica','bold');doc.setFontSize(10.5);doc.setTextColor(...ink);T('Commentaire',M,y);y+=5;doc.setFont('helvetica','normal');doc.setFontSize(10);const cl=doc.splitTextToSize(pdfSafe(r.commentaire),W-2*M);need(cl.length*4.8);doc.text(cl,M,y);y+=cl.length*4.8}
+      const withPh=(ev.comps||[]).filter(c=>(r.photos?.[c.code]||[]).length);
+      if(withPh.length){
+        y+=6;need(20);doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(...ink);T('Photos de terrain',M,y);y+=6;
+        const cw=(W-2*M-6)/2,ch=64;
+        for(const c of withPh){
+          need(8+ch);doc.setFontSize(9.5);doc.setTextColor(...acc);doc.setFont('helvetica','bold');T(c.code,M,y);doc.setTextColor(...ink);doc.setFont('helvetica','normal');T(COMPS[c.code][0].slice(0,90),M+11,y);y+=3;
+          const ps=r.photos[c.code];
+          for(let i=0;i<ps.length;i++){
+            if(i>0&&i%2===0){y+=ch+4;need(ch)}
+            const x=M+(i%2)*(cw+6);
+            try{const u=urls[ps[i]];if(!u)throw 0;const im=await imgData(u);const k=Math.min(cw/im.w,ch/im.h);doc.addImage(im.d,'JPEG',x,y,im.w*k,im.h*k)}
+            catch(e){doc.setDrawColor(...mut);doc.rect(x,y,cw,ch);doc.setTextColor(...mut);T('Photo indisponible',x+4,y+8)}
+          }
+          y+=ch+7;
+        }
+      }
+    }
+    const name=studs.length===1?`${safeName(fullName(studs[0]))} - ${safeName(ev.titre)}.pdf`:`${safeName(cls?.nom)} - ${safeName(ev.titre)} - fiches.pdf`;
+    doc.save(name);
+  }catch(e){console.error(e);toast('Le PDF n’a pas pu être créé.')}
+  finally{btn.disabled=false;btn.innerHTML=lbl}
+}
+
+start();
+</script>
+</body>
+</html>
