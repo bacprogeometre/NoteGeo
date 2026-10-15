@@ -215,6 +215,9 @@ tr.click:hover td.n{color:var(--blue)}
 .t2{font-size:.9rem;font-weight:700}
 .h2{font-size:.78rem;color:var(--muted);font-family:var(--f-mono)}
 @media (max-width:760px){.cline.sub > span[aria-hidden]{display:none}.cline.sub{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.evitem{display:flex;gap:6px;align-items:stretch}
+.evitem .classcard{flex:1;min-width:0}
+.evdel{width:48px;padding:0;color:var(--danger);border-color:var(--line)}
 /* overlays */
 .ov{position:fixed;inset:0;z-index:50;background:rgba(15,22,30,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .ov img{max-width:100%;max-height:72vh;border-radius:8px}
@@ -292,7 +295,11 @@ const UNITS = [
 ];
 const LEVELS = [{n:'Non acquis',a:'NA',f:0},{n:'Fragile',a:'F',f:1/3},{n:'Satisfaisant',a:'S',h:'Satis&shy;faisant',f:2/3},{n:'Très bien maîtrisé',a:'TB',f:1},{n:'Moyen',a:'M',f:1/2}];
 /* Ordre d'affichage : 4 niveaux, ou 5 avec « Moyen » (50 %) entre Fragile et Satisfaisant. Les valeurs 0 à 3 gardent leur sens. */
-const lvOrder = ()=> S.echelle===5 ? [0,1,4,2,3] : [0,1,2,3];
+let CUR={aff:'note20',ech:4};
+const AFF_LBL={note20:'note /20',pourcent:'pourcentage',niveau:'niveau seul'};
+const evMeta = ev=> (ev?.comps||[]).find(c=>c&&c.meta)||{};
+const setCur = ev=>{const m=evMeta(ev);CUR={aff:m.affichage||ev?.affichage||S.affichage,ech:m.echelle||ev?.echelle||S.echelle};return CUR};
+const lvOrder = ()=> CUR.ech===5 ? [0,1,4,2,3] : [0,1,2,3];
 const lvF = v=> LEVELS[v]?.f ?? v/3;
 const TYPES = ['TP terrain','Contrôle écrit','DAO / CAO','Oral'];
 const DEFAULT_FAV = ['Bonne autonomie.','Auto-contrôles à systématiser.','Croquis peu exploitable.','Travail soigné.','Consignes de sécurité à respecter.'];
@@ -417,6 +424,7 @@ const IC = {
   cam:'<svg viewBox="0 0 24 24" fill="none" stroke="#2F6DB5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
   prev:'<svg viewBox="0 0 24 24" fill="none" stroke="#1C2B39" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>',
   next:'<svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>',
   dl:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14"/></svg>'
 };
 let toastT;
@@ -498,7 +506,7 @@ const actOf = id=> ACTS.find(a=>a.id===id);
 function resOf(ev,st){const id=ev.id+'_'+st.id;return S.results[id]||{id,evaluation_id:ev.id,student_id:st.id,niveaux:{},statut:null,commentaire:'',note_manuelle:null,photos:{}}}
 /* Lignes de la grille : compétences du référentiel ou questions, avec critères notés facultatifs */
 function itemsOf(ev){
-  return (ev.comps||[]).map((c,i)=>{
+  return (ev.comps||[]).filter(c=>c&&!c.meta).map((c,i)=>{
     const crits=(c.crits||[]).map((x,k)=>({key:(c.id||c.code)+'.'+k,t:x.t,pts:Math.max(0,+x.pts||0)}));
     const sum=crits.reduce((a,b)=>a+b.pts,0);
     return {id:c.id||c.code, comp:c.code||null, q:!!c.texte, n:i+1, crits,
@@ -524,12 +532,12 @@ function score(ev,r){
   return {ratio:r.note_manuelle!=null?r.note_manuelle/20:calc, calc, n, pts:s, max:items.reduce((a,b)=>a+b.poids,0)};
 }
 const lvlIdx = x=>{let b=0,d=9;for(const i of lvOrder()){const e=Math.abs(LEVELS[i].f-x);if(e<d-1e-9){d=e;b=i}}return b};
-function fmtRes(x,mode){mode=mode||S.affichage;if(x==null)return '–';if(mode==='pourcent')return Math.round(x*100)+' %';if(mode==='niveau')return LEVELS[lvlIdx(x)].n;return fmt(x*20)+' /20'}
-function fmtShort(x){if(x==null)return '–';if(S.affichage==='pourcent')return Math.round(x*100)+' %';if(S.affichage==='niveau')return LEVELS[lvlIdx(x)].a;return fmt(x*20)}
+function fmtRes(x,mode){mode=mode||CUR.aff;if(x==null)return '–';if(mode==='pourcent')return Math.round(x*100)+' %';if(mode==='niveau')return LEVELS[lvlIdx(x)].n;return fmt(x*20)+' /20'}
+function fmtShort(x){if(x==null)return '–';if(CUR.aff==='pourcent')return Math.round(x*100)+' %';if(CUR.aff==='niveau')return LEVELS[lvlIdx(x)].a;return fmt(x*20)}
 function bigHTML(x){
   if(x==null) return '–';
-  if(S.affichage==='pourcent') return `${Math.round(x*100)}<small> %</small>`;
-  if(S.affichage==='niveau') return `<span class="lvtxt">${LEVELS[lvlIdx(x)].n}</span><small style="display:block;font-size:.9rem;margin-top:4px">${Math.round(x*100)} % de réussite</small>`;
+  if(CUR.aff==='pourcent') return `${Math.round(x*100)}<small> %</small>`;
+  if(CUR.aff==='niveau') return `<span class="lvtxt">${LEVELS[lvlIdx(x)].n}</span><small style="display:block;font-size:.9rem;margin-top:4px">${Math.round(x*100)} % de réussite</small>`;
   return `${fmt(x*20)}<small> /20</small>`;
 }
 const resLabel = (r,n)=> r.statut==='absent'?'Abs.':r.statut==='non_rendu'?'N.R.':fmtShort(n.ratio);
@@ -613,6 +621,7 @@ async function loadData(){
     const fav=d.settings.find(x=>x.id==='favoris'); if(fav&&Array.isArray(fav.valeur)) S.fav=fav.valeur;
     const aff=d.settings.find(x=>x.id==='affichage'); if(aff&&['note20','pourcent','niveau'].includes(aff.valeur)) S.affichage=aff.valeur;
     const ech=d.settings.find(x=>x.id==='echelle'); if(ech&&(ech.valeur===5||ech.valeur===4)) S.echelle=ech.valeur;
+    const dA=d.settings.find(x=>x.id==='def_affichage'), dE=d.settings.find(x=>x.id==='def_echelle'); S.defAff=dA?.valeur||S.affichage; S.defEch=dE?.valeur||S.echelle;
   }catch(e){console.error(e);app.innerHTML=`<div class="empty">Impossible de charger les données (${esc(e.message||e)}). Vérifiez la connexion et les réglages Supabase, puis rechargez.</div>`;return}
   if(!S.classes.find(c=>c.id===ui.classId)) ui.classId=S.classes[0]?.id||null;
   if(!curEval()) ui.evalId=null;
@@ -629,19 +638,19 @@ function render(){
   saveUi();
   document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-current',t.dataset.tab===ui.tab?'page':'false'));
   const demo = B.mode==='local' ? `<div class="banner"><strong>Mode démo :</strong> les données restent sur cet appareil. Renseignez les réglages Supabase en haut du fichier pour les partager.</div>` : '';
-  let html='';
+  let html=''; CUR={aff:S.affichage,ech:S.echelle};
   if(ui.tab==='classes') html = ui.ficheId ? viewFiche() : viewClasses();
   else if(ui.tab==='evaluer') html = viewEvaluer();
   else if(ui.tab==='resultats') html = viewResultats();
   else html = viewRef();
-  app.classList.toggle('levels5',S.echelle===5);
   app.innerHTML = demo + html;
+  app.classList.toggle('levels5',CUR.ech===5);
   setSync(); hydrateImgs(); updateTotal();
   app.querySelectorAll('[data-it-text]').forEach(t=>{t.style.height='auto';t.style.height=t.scrollHeight+'px'});
 }
 
 /* ---------------- CLASSES ---------------- */
-function viewClasses(){return viewClasses0()+settingsCard()}
+function viewClasses(){return viewClasses0()}
 function viewClasses0(){
   const cls=S.classes.slice().sort((a,b)=>(a.nom||'').localeCompare(b.nom||'','fr'));
   const c=S.classes.find(x=>x.id===ui.classId);
@@ -676,19 +685,6 @@ async function addStudents(list){
   if(await save('students',rows,`${rows.length} élève${rows.length>1?'s':''} ajouté${rows.length>1?'s':''}`)){S.students.push(...rows);ui.import=false;render()}
 }
 
-/* ---------------- RÉGLAGES ---------------- */
-function settingsCard(){
-  const opts=[['note20','Note /20','Le résultat est ramené sur 20 (export Pronote direct).'],['pourcent','Pourcentage','Le résultat s’affiche en % de réussite, sans note.'],['niveau','Niveau seul','Seul le niveau global s’affiche : Non acquis, Fragile, Satisfaisant ou Très bien maîtrisé.']];
-  const cur=opts.find(o=>o[0]===S.affichage)||opts[0];
-  return `<section class="card stack" style="margin-top:20px"><h2>Affichage du résultat</h2>
-   <div class="seg" role="group" aria-label="Affichage du résultat">${opts.map(o=>`<button data-a="setMode" data-v="${o[0]}" aria-pressed="${S.affichage===o[0]}">${o[1]}</button>`).join('')}</div>
-   <p class="muted" style="margin:0;font-size:.9rem">${esc(cur[2])}</p>
-   <h2 style="margin-top:8px">Échelle de niveaux</h2>
-   <div class="seg" role="group" aria-label="Échelle de niveaux"><button data-a="setEchelle" data-v="4" aria-pressed="${S.echelle!==5}">4 niveaux</button><button data-a="setEchelle" data-v="5" aria-pressed="${S.echelle===5}">5 niveaux</button></div>
-   <p class="muted" style="margin:0;font-size:.9rem">Part des points accordée : ${lvOrder().map(i=>`${LEVELS[i].n} ${Math.round(LEVELS[i].f*100)} %`).join(' · ')}. Les notes déjà saisies gardent leur valeur si vous changez d’échelle.</p>
-  </section>`;
-}
-
 /* ---------------- FICHE ÉLÈVE ---------------- */
 function viewFiche(){
   const s=S.students.find(x=>x.id===ui.ficheId); if(!s){ui.ficheId=null;return viewClasses()}
@@ -698,7 +694,7 @@ function viewFiche(){
   const moy=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;
   const hist={}; CODES.forEach(c=>hist[c]=[]);
   rows.forEach(({ev,r})=>{
-    if(r.statut) return; const by={};
+    if(r.statut) return; setCur(ev); const by={};
     itemsOf(ev).forEach(it=>{const x=itemRatio(it,r);if(it.comp&&x!=null)(by[it.comp]=by[it.comp]||[]).push(x)});
     Object.entries(by).forEach(([c,l])=>hist[c].push({v:lvlIdx(l.reduce((a,b)=>a+b,0)/l.length),t:ev.titre,d:ev.date}));
   });
@@ -710,7 +706,7 @@ function viewFiche(){
     <h1>${esc(fullName(s))}</h1>
     <section class="card stack"><h2>Évaluations</h2>
      ${rows.length?`<div class="tblwrap" style="padding:0"><table class="res"><thead><tr><th>Date</th><th>Évaluation</th><th>Activité</th><th style="text-align:right">Résultat</th></tr></thead><tbody>
-      ${rows.map(({ev,r,n})=>`<tr class="click" data-a="openRes" data-ev="${esc(ev.id)}" data-st="${esc(s.id)}"><td class="n mono" style="font-weight:400">${esc(frDate(ev.date))}</td><td class="n">${esc(ev.titre)}${photoCount(r)?` <span class="pill">${photoCount(r)} photo${photoCount(r)>1?'s':''}</span>`:''}</td><td>${esc(ev.activite||'')}</td><td class="note">${resLabel(r,n)}</td></tr>`).join('')}
+      ${rows.map(({ev,r,n})=>(setCur(ev),`<tr class="click" data-a="openRes" data-ev="${esc(ev.id)}" data-st="${esc(s.id)}"><td class="n mono" style="font-weight:400">${esc(frDate(ev.date))}</td><td class="n">${esc(ev.titre)}${photoCount(r)?` <span class="pill">${photoCount(r)} photo${photoCount(r)>1?'s':''}</span>`:''}</td><td>${esc(ev.activite||'')}</td><td class="note">${resLabel(r,n)}</td></tr>`)).join('')}
      </tbody></table></div>`:'<p class="muted">Pas encore d’évaluation pour cette classe.</p>'}
     </section>
     <section class="card stack"><h2>Progression par compétence</h2>
@@ -718,9 +714,9 @@ function viewFiche(){
     </section>
    </div>
    <aside class="stack">
-    <div class="notebox"><span class="muted" style="font-size:.9rem">Moyenne des évaluations</span><span class="big">${bigHTML(moy)}</span><span class="muted" style="font-size:.85rem">${vals.length} évaluation${vals.length>1?'s':''} notée${vals.length>1?'s':''}</span></div>
+    <div class="notebox"><span class="muted" style="font-size:.9rem">Moyenne des évaluations</span><span class="big">${(CUR={aff:'note20',ech:4},bigHTML(moy))}</span><span class="muted" style="font-size:.85rem">${moy==null?'':Math.round(moy*100)+' % de réussite'}</span><span class="muted" style="font-size:.85rem">${vals.length} évaluation${vals.length>1?'s':''} notée${vals.length>1?'s':''}</span></div>
     <section class="card stack"><h2>Bilan par unité</h2>
-     ${UNITS.map(u=>{const p=unit(u);return `<div class="stack" style="gap:4px"><div class="row between"><strong>${u.id}</strong><span class="mono">${fmtRes(p)}</span></div><span class="muted" style="font-size:.82rem">${esc(u.name)}</span><div class="bar"><i style="width:${p==null?0:Math.round(p*100)}%"></i></div></div>`}).join('')}
+     ${UNITS.map(u=>{const p=unit(u);return `<div class="stack" style="gap:4px"><div class="row between"><strong>${u.id}</strong><span class="mono">${fmtRes(p,'pourcent')}</span></div><span class="muted" style="font-size:.82rem">${esc(u.name)}</span><div class="bar"><i style="width:${p==null?0:Math.round(p*100)}%"></i></div></div>`}).join('')}
      <p class="muted" style="margin:0;font-size:.8rem">Moyenne des niveaux obtenus sur les compétences de l’unité.</p>
     </section>
    </aside>
@@ -734,17 +730,17 @@ function viewEvaluer(){
   if(ui.newEval || !ev) return viewEvalPicker();
   const studs=stuOf(ev.class_id);
   if(!studs.length) return `<button class="btn ghost" data-a="changeEval">← Changer d’évaluation</button><div class="empty" style="margin-top:14px">Cette classe n’a pas encore d’élèves.</div>`;
-  ui.stuIdx=Math.max(0,Math.min(ui.stuIdx,studs.length-1));
+  setCur(ev); ui.stuIdx=Math.max(0,Math.min(ui.stuIdx,studs.length-1));
   const st=studs[ui.stuIdx], r=resOf(ev,st), n=score(ev,r), act=actOf(ev.activite), cls=S.classes.find(c=>c.id===ev.class_id);
   const items=itemsOf(ev), eq=equalW(items), pc=photoCount(r), qev=items.some(i=>i.q);
   let ov='';
-  if(S.affichage==='note20') ov=`<label class="f" style="margin-top:8px">Ajuster la note à la main (sur 20)<input id="override" class="mono" inputmode="decimal" placeholder="vide = note calculée" value="${r.note_manuelle!=null?esc(String(r.note_manuelle).replace('.',',')):''}"></label>`;
-  else if(S.affichage==='pourcent') ov=`<label class="f" style="margin-top:8px">Ajuster à la main (en %)<input id="override" class="mono" inputmode="decimal" placeholder="vide = calculé" value="${r.note_manuelle!=null?Math.round(r.note_manuelle*5):''}"></label>`;
+  if(CUR.aff==='note20') ov=`<label class="f" style="margin-top:8px">Ajuster la note à la main (sur 20)<input id="override" class="mono" inputmode="decimal" placeholder="vide = note calculée" value="${r.note_manuelle!=null?esc(String(r.note_manuelle).replace('.',',')):''}"></label>`;
+  else if(CUR.aff==='pourcent') ov=`<label class="f" style="margin-top:8px">Ajuster à la main (en %)<input id="override" class="mono" inputmode="decimal" placeholder="vide = calculé" value="${r.note_manuelle!=null?Math.round(r.note_manuelle*5):''}"></label>`;
   else ov=`<label class="f" style="margin-top:8px">Ajuster le niveau à la main<select id="override"><option value="">Niveau calculé</option>${lvOrder().map(i=>LEVELS[i]).map((l,j,_,i=lvOrder()[j])=>`<option value="${i}" ${r.note_manuelle!=null&&lvlIdx(r.note_manuelle/20)===i?'selected':''}>${l.n}</option>`).join('')}</select></label>`;
   const doneItems=Object.keys(r.photos||{}).filter(k=>r.photos[k].length).map(k=>{const it=items.find(i=>i.id===k);return it?itemLabel(it):k});
   return `<div class="row between" style="margin-bottom:8px">
      <button class="btn ghost" data-a="changeEval">← ${esc(ev.titre)}</button>
-     <span class="muted" style="font-size:.88rem">${esc(cls?.nom||'')} · ${esc(frDate(ev.date))} · ${esc(ev.type||'')}${ev.activite?' · Activité '+esc(ev.activite):''}${act?' · '+act.unit:''}</span></div>
+     <span class="muted" style="font-size:.88rem">${esc(cls?.nom||'')} · ${esc(frDate(ev.date))} · ${esc(ev.type||'')}${ev.activite?' · Activité '+esc(ev.activite):''}${act?' · '+act.unit:''} · ${CUR.ech} niveaux · ${AFF_LBL[CUR.aff]}</span></div>
   <div class="who" style="margin-bottom:14px">
     <div class="nm">${esc(fullName(st))}</div>
     <div class="nav"><button data-a="prevStu" aria-label="Élève précédent" ${ui.stuIdx===0?'disabled':''}>${IC.prev}</button><span class="mono">${ui.stuIdx+1} / ${studs.length}</span><button class="next" data-a="nextStu" aria-label="Élève suivant" ${ui.stuIdx>=studs.length-1?'disabled':''}>${IC.next}</button></div>
@@ -801,7 +797,7 @@ function itemRow(r,it,items,eq,qev){
 
 /* ---------------- NOUVELLE ÉVALUATION ---------------- */
 function splitEq(keys){const p=toPct(keys.map(()=>1));return Object.fromEntries(keys.map((k,i)=>[k,p[i]]))}
-function newDraft(){return {mode:'ref',titre:'',date:today(),type:TYPES[0],act:'1.1',ref:splitEq(ACTS[0].comps),refCrit:{},refOpen:{},items:[],paste:'',actAuto:false}}
+function newDraft(){return {ech:S.defEch||S.echelle,aff:S.defAff||S.affichage,mode:'ref',titre:'',date:today(),type:TYPES[0],act:'1.1',ref:splitEq(ACTS[0].comps),refCrit:{},refOpen:{},items:[],paste:'',actAuto:false}}
 const critSum = it=>(it.crits||[]).reduce((a,c)=>a+(c.pts==null?1:+c.pts||0),0);
 const v2 = x=>x==null||x===''?'':String(x).replace('.',',');
 function viewEvalPicker(){
@@ -860,13 +856,21 @@ function viewEvalPicker(){
   <div class="split wide">
    <section class="stack">
     <h2>Reprendre une évaluation</h2>
-    ${list.length?list.map(e=>{const studs=stuOf(cid);const done=studs.filter(s=>{const r=resOf(e,s);return r.statut||score(e,r).n}).length;return `<button class="classcard" data-a="openEval" data-id="${esc(e.id)}" style="min-height:auto"><b>${esc(e.titre)}</b><span class="muted">${esc(frDate(e.date))} · ${esc(e.type||'')}${e.activite?' · Activité '+esc(e.activite):''} · ${done}/${studs.length} élèves notés</span></button>`}).join(''):'<div class="empty">Aucune évaluation pour cette classe. Créez la première ici.</div>'}
+    ${list.length?list.map(e=>{const studs=stuOf(cid);const done=studs.filter(s=>{const r=resOf(e,s);return r.statut||score(e,r).n}).length;const m=setCur(e);return `<div class="evitem"><button class="classcard" data-a="openEval" data-id="${esc(e.id)}" style="min-height:auto"><b>${esc(e.titre)}</b><span class="muted">${esc(frDate(e.date))} · ${esc(e.type||'')}${e.activite?' · Activité '+esc(e.activite):''} · ${done}/${studs.length} élèves notés · ${m.ech} niveaux · ${AFF_LBL[m.aff]}</span></button><button class="btn ghost evdel" data-a="delEval" data-id="${esc(e.id)}" aria-label="Supprimer l’évaluation ${esc(e.titre)}">${IC.trash}</button></div>`}).join(''):'<div class="empty">Aucune évaluation pour cette classe. Créez la première ici.</div>'}
    </section>
    <section class="card stack">
     <h2>Nouvelle évaluation</h2>
     <label class="f">Titre<input id="neTitre" placeholder="TP nivellement direct" value="${esc(d.titre)}"></label>
     <div class="grid2"><label class="f">Date<input id="neDate" type="date" value="${esc(d.date)}"></label>
     <label class="f">Type<select id="neType">${TYPES.map(t=>`<option ${t===d.type?'selected':''}>${t}</option>`).join('')}</select></label></div>
+    <div class="grid2">
+     <div class="stack" style="gap:4px"><span style="font-size:.85rem;font-weight:700;color:var(--muted)">Échelle de niveaux</span>
+      <div class="seg" role="group" aria-label="Échelle de niveaux"><button data-a="draftEch" data-v="4" aria-pressed="${d.ech!==5}">4 niveaux</button><button data-a="draftEch" data-v="5" aria-pressed="${d.ech===5}">5 niveaux</button></div>
+      <span class="muted" style="font-size:.78rem">${(d.ech===5?[0,1,4,2,3]:[0,1,2,3]).map(i=>LEVELS[i].a+' '+Math.round(LEVELS[i].f*100)+' %').join(' · ')}</span></div>
+     <div class="stack" style="gap:4px"><span style="font-size:.85rem;font-weight:700;color:var(--muted)">Résultat affiché</span>
+      <div class="seg" role="group" aria-label="Résultat affiché">${[['note20','Note /20'],['pourcent','%'],['niveau','Niveau']].map(o=>`<button data-a="draftAff" data-v="${o[0]}" aria-pressed="${d.aff===o[0]}">${o[1]}</button>`).join('')}</div>
+      <span class="muted" style="font-size:.78rem">${{note20:'Note ramenée sur 20.',pourcent:'Pourcentage de réussite, sans note.',niveau:'Niveau global seul, sans chiffre.'}[d.aff]}</span></div>
+    </div>
     <div class="seg" role="group" aria-label="Contenu de la grille"><button data-a="draftMode" data-v="ref" aria-pressed="${d.mode==='ref'}">Compétences du référentiel</button><button data-a="draftMode" data-v="q" aria-pressed="${d.mode==='q'}">Mes questions / critères</button></div>
     ${body}
     ${showTot?`<div class="row between"><span id="tot" class="tot mono"></span><button class="btn small ghost" data-a="equalW">Répartir également</button></div>`:''}
@@ -918,15 +922,15 @@ function viewResultats(){
     <label class="f" style="flex:1;min-width:200px">Classe<select id="resClass" class="inp">${S.classes.map(c=>`<option value="${esc(c.id)}" ${c.id===cid?'selected':''}>${esc(c.nom)}</option>`).join('')}</select></label>
     <label class="f" style="flex:2;min-width:240px">Évaluation<select id="resEval" class="inp">${list.map(e=>`<option value="${esc(e.id)}" ${ev&&e.id===ev.id?'selected':''}>${esc(frDate(e.date))} · ${esc(e.titre)}</option>`).join('')||'<option>Aucune évaluation</option>'}</select></label></div>`;
   if(!ev) return head+'<div class="empty">Aucune évaluation pour cette classe.</div>';
-  const studs=stuOf(cid), items=itemsOf(ev), eq=equalW(items), qmode=items.some(i=>i.q);
+  setCur(ev); const studs=stuOf(cid), items=itemsOf(ev), eq=equalW(items), qmode=items.some(i=>i.q);
   const data=studs.map(s=>{const r=resOf(ev,s);return {s,r,n:score(ev,r)}});
   const vals=data.map(d=>d.n.ratio).filter(x=>x!=null);
   const moy=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;
   const abs=data.filter(d=>d.r.statut==='absent').length, nr=data.filter(d=>d.r.statut==='non_rendu').length;
   const alerts=items.map(it=>{const g=data.filter(d=>!d.r.statut&&itemRatio(it,d.r)!=null);const low=g.filter(d=>lvlIdx(itemRatio(it,d.r))<=1).length;return {it,g:g.length,low}}).filter(x=>x.g&&x.low>x.g/3);
-  const unitHead={note20:'/20',pourcent:'%',niveau:'Niveau'}[S.affichage];
-  return head+`<div class="row between" style="margin-bottom:12px"><span class="muted">${esc(ev.type||'')}${ev.activite?' · Activité '+esc(ev.activite)+' – '+esc(actOf(ev.activite)?.name||''):''}</span>
-   <div class="row"><button class="btn" data-a="csv">${IC.dl}Export Pronote (CSV)</button><button class="btn primary" data-a="pdfAll">${IC.dl}Fiches PDF de la classe</button></div></div>
+  const unitHead={note20:'/20',pourcent:'%',niveau:'Niveau'}[CUR.aff];
+  return head+`<div class="row between" style="margin-bottom:12px"><span class="muted">${esc(ev.type||'')}${ev.activite?' · Activité '+esc(ev.activite)+' – '+esc(actOf(ev.activite)?.name||''):''} · ${CUR.ech} niveaux · ${AFF_LBL[CUR.aff]}</span>
+   <div class="row"><button class="btn danger" data-a="delEval" data-id="${esc(ev.id)}">Supprimer l’évaluation</button><button class="btn" data-a="csv">${IC.dl}Export Pronote (CSV)</button><button class="btn primary" data-a="pdfAll">${IC.dl}Fiches PDF de la classe</button></div></div>
   <div class="split">
    <div class="stack">
    <div class="tblwrap"><table class="res"><thead><tr><th>Élève</th>${items.map(it=>`<th title="${esc(it.texte)}">${esc(itemLabel(it))}</th>`).join('')}<th>Photos</th><th style="text-align:right">${unitHead}</th></tr></thead><tbody>
@@ -975,8 +979,20 @@ const A = {
     ui.classId=cid; render();
   },
   async delSample(){const c=S.classes.find(x=>x.exemple);if(c){ui.classId=c.id;await A.delClass(true)}},
-  async setEchelle(t){S.echelle=+t.dataset.v;render();await save('settings',{id:'echelle',valeur:S.echelle})},
-  async setMode(t){S.affichage=t.dataset.v;render();await save('settings',{id:'affichage',valeur:S.affichage})},
+  draftEch(t){readDraft();ui.draft.ech=+t.dataset.v;rerenderKeep()},
+  draftAff(t){readDraft();ui.draft.aff=t.dataset.v;rerenderKeep()},
+  async delEval(t){
+    const ev=S.evaluations.find(e=>e.id===t.dataset.id); if(!ev) return;
+    const rs=Object.values(S.results).filter(r=>r.evaluation_id===ev.id);
+    const graded=rs.filter(r=>r.statut||Object.keys(r.niveaux||{}).length).length;
+    const paths=rs.flatMap(r=>Object.values(r.photos||{}).flat());
+    if(!await confirmBox('Supprimer l’évaluation ?',`« ${ev.titre} » sera supprimée pour tous les enseignants, avec ${graded} fiche${graded>1?'s':''} d’élève notée${graded>1?'s':''} et ${paths.length} photo${paths.length>1?'s':''}. Cette action est définitive.`,'Supprimer'))return;
+    await flush();
+    try{await B.remove('results',rs.map(r=>r.id));await B.remove('evaluations',ev.id);await B.deletePhotos(paths)}catch(e){console.error(e);toast('La suppression a échoué. Vérifiez la connexion.');return}
+    rs.forEach(r=>delete S.results[r.id]); S.evaluations=S.evaluations.filter(e=>e.id!==ev.id);
+    if(ui.evalId===ev.id){ui.evalId=null;if(ui.tab==='evaluer')ui.newEval=true}
+    render(); toast('Évaluation supprimée');
+  },
   pickClass(t){ui.classId=t.dataset.id;ui.import=false;render()},
   toggleImport(){ui.import=!ui.import;render()},
   async doImport(){await addStudents(parseList($('#impTxt').value))},
@@ -1033,7 +1049,9 @@ const A = {
     else comps=d.items.filter(it=>(it.texte||'').trim()).map((it,i)=>{const crits=(it.crits||[]).filter(c=>(c.t||'').trim()).map(c=>({t:c.t.trim(),pts:c.pts??1}));const sum=crits.reduce((a,c)=>a+(+c.pts||0),0);const o={id:'q'+(i+1),code:it.comp||null,texte:it.texte.trim(),poids:it.poids??(crits.length?sum:1)};if(crits.length)o.crits=crits;return o});
     if(!comps.length){toast(d.mode==='ref'?'Cochez au moins une compétence.':'Ajoutez au moins une question.');return}
     if(!comps.some(c=>c.poids>0)) comps.forEach(c=>c.poids=1);
+    comps.push({meta:true,echelle:d.ech===5?5:4,affichage:d.aff||'note20'});
     const ev={id:uid(),class_id:$('#evClass').value,titre,date:d.date||today(),type:d.type,activite:d.act||null,comps,created_at:new Date().toISOString()};
+    if(d.ech!==S.defEch||d.aff!==S.defAff){S.defEch=d.ech;S.defAff=d.aff;save('settings',[{id:'def_echelle',valeur:S.defEch},{id:'def_affichage',valeur:S.defAff}])}
     if(!await save('evaluations',ev,'Évaluation créée'))return;
     S.evaluations.push(ev); ui.evalId=ev.id; ui.classId=ev.class_id; ui.stuIdx=0; ui.newEval=false; ui.draft=null; render(); window.scrollTo(0,0);
   },
@@ -1083,12 +1101,12 @@ app.addEventListener('change',e=>{
   else if(t.id==='resClass'){ui.classId=t.value;ui.evalId=evalsOf(t.value)[0]?.id||null;render()}
   else if(t.id==='resEval'){ui.evalId=t.value;render()}
   else if(t.id==='override'){
-    const {r}=curCtx(); const v=t.value.trim();
+    const {ev,r}=curCtx(); setCur(ev); const v=t.value.trim();
     if(!v) r.note_manuelle=null;
-    else if(S.affichage==='niveau') r.note_manuelle=Math.round(lvF(+v)*20*2)/2;
-    else { const n=num(v), max=S.affichage==='pourcent'?100:20;
+    else if(CUR.aff==='niveau') r.note_manuelle=Math.round(lvF(+v)*20*2)/2;
+    else { const n=num(v), max=CUR.aff==='pourcent'?100:20;
       if(n==null||n<0||n>max){toast(`Entrez une valeur entre 0 et ${max}, ou laissez vide.`);return}
-      r.note_manuelle=S.affichage==='pourcent'?n/5:n; }
+      r.note_manuelle=CUR.aff==='pourcent'?n/5:n; }
     putRes(r); rerenderKeep();
   }
 });
@@ -1127,7 +1145,7 @@ async function imgData(url){
 }
 async function makePdf(ev,studs,btn){
   if(!window.jspdf){toast('Le module PDF n’a pas pu se charger.');return}
-  const lbl=btn.innerHTML; btn.disabled=true; btn.textContent='Préparation du PDF…';
+  const lbl=btn.innerHTML; btn.disabled=true; btn.textContent='Préparation du PDF…'; setCur(ev);
   try{
     const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:'mm',format:'a4'});
     const W=210,M=14,ink=[28,43,57],mut=[90,102,114],acc=[184,65,12],blue=[47,109,181];
@@ -1141,7 +1159,7 @@ async function makePdf(ev,studs,btn){
       const r=resOf(ev,s), n=score(ev,r);
       doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...mut);T(`${CONFIG.ETABLISSEMENT||''} · ${cls?.nom||''}`,M,y);
       y+=8;doc.setFont('helvetica','bold');doc.setFontSize(18);doc.setTextColor(...ink);T(fullName(s),M,y);
-      doc.setFontSize(S.affichage==='niveau'?15:22);doc.setTextColor(...blue);T(r.statut==='absent'?'Absent':r.statut==='non_rendu'?'Non rendu':fmtRes(n.ratio),W-M,y,{align:'right'});
+      doc.setFontSize(CUR.aff==='niveau'?15:22);doc.setTextColor(...blue);T(r.statut==='absent'?'Absent':r.statut==='non_rendu'?'Non rendu':fmtRes(n.ratio),W-M,y,{align:'right'});
       y+=7;doc.setFont('helvetica','normal');doc.setFontSize(10.5);doc.setTextColor(...ink);T(`${ev.titre} · ${frDate(ev.date)} · ${ev.type||''}`,M,y);
       if(act){y+=5;doc.setTextColor(...mut);doc.setFontSize(9.5);T(`Activité ${ev.activite} - ${act.name} · Unité ${act.unit}`,M,y)}
       if(r.note_manuelle!=null&&n.calc!=null){y+=5;doc.setTextColor(...mut);doc.setFontSize(9.5);T(`Résultat ajusté par l'enseignant (calculé : ${fmtRes(n.calc)})`,M,y)}
