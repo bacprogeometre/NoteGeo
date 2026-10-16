@@ -223,6 +223,12 @@ tr.click:hover td.n{color:var(--blue)}
 .cmt{display:block}
 .cmt textarea{min-height:38px;padding:6px 10px;font-size:.9rem;resize:vertical;overflow:hidden;background:#FFFBEA;border-color:#E9D9A6}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.got{font-family:var(--f-mono);font-weight:600;font-size:1.05rem;white-space:nowrap;color:var(--muted);flex:none}
+.got.on{color:var(--blue)}
+.got small{font-size:.75rem;font-weight:400;color:var(--muted)}
+.gotrow{display:flex;justify-content:flex-end;margin-bottom:-4px}
+.editbar{display:flex;justify-content:flex-end;padding-bottom:4px;border-bottom:1px dashed var(--line)}
+.cdel{min-height:32px;padding:0 10px;font-size:.78rem;margin-left:auto}
 /* overlays */
 .ov{position:fixed;inset:0;z-index:50;background:rgba(15,22,30,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .ov img{max-width:100%;max-height:72vh;border-radius:8px}
@@ -511,14 +517,17 @@ const actOf = id=> ACTS.find(a=>a.id===id);
 function resOf(ev,st){const id=ev.id+'_'+st.id;return S.results[id]||{id,evaluation_id:ev.id,student_id:st.id,niveaux:{},statut:null,commentaire:'',note_manuelle:null,photos:{}}}
 /* Lignes de la grille : compétences du référentiel ou questions, avec critères notés facultatifs */
 function itemsOf(ev){
-  return (ev.comps||[]).filter(c=>c&&!c.meta).map((c,i)=>{
-    const crits=(c.crits||[]).map((x,k)=>({key:(c.id||c.code)+'.'+k,t:x.t,pts:Math.max(0,+x.pts||0)}));
+  return (ev.comps||[]).filter(c=>c&&!c.meta&&!c.del).map((c,i)=>{
+    const crits=(c.crits||[]).map((x,k)=>({key:(c.id||c.code)+'.'+k,k,t:x.t,pts:Math.max(0,+x.pts||0),del:x.del})).filter(x=>!x.del);
     const sum=crits.reduce((a,b)=>a+b.pts,0);
     return {id:c.id||c.code, comp:c.code||null, q:!!c.texte, n:i+1, crits,
       texte:c.texte||(c.code&&COMPS[c.code]?COMPS[c.code][0]:''),
-      poids:Math.max(0,+(c.poids??c.coef??(sum||1))||0)};
+      poids:Math.max(0,+((c.pa&&crits.length)?sum:(c.poids??c.coef??(sum||1)))||0)};
   });
 }
+const nb = x=>String(Math.round(x*100)/100).replace('.',',');
+/* Points obtenus sur une ligne : barème de la question, ou somme des points de ses critères */
+function ptsGot(it,r,qev){const base=qev?it.poids:(it.crits.length?it.crits.reduce((a,c)=>a+c.pts,0):null);if(base==null)return null;const x=r.statut?null:itemRatio(it,r);return {got:x==null?null:x*base,base}}
 const itemLabel = it=> it.q ? 'Q'+it.n : it.id;
 const pctOf = (it,items)=>{const t=items.reduce((a,b)=>a+b.poids,0);return t?Math.round(it.poids/t*1000)/10:0};
 const equalW = items=> items.every(i=>Math.abs(i.poids-items[0].poids)<=0.5);
@@ -746,7 +755,7 @@ function viewEvaluer(){
   else ov=`<label class="f" style="margin-top:8px">Ajuster le niveau à la main<select id="override"><option value="">Niveau calculé</option>${lvOrder().map(i=>LEVELS[i]).map((l,j,_,i=lvOrder()[j])=>`<option value="${i}" ${r.note_manuelle!=null&&lvlIdx(r.note_manuelle/20)===i?'selected':''}>${l.n}</option>`).join('')}</select></label>`;
   const doneItems=Object.keys(r.photos||{}).filter(k=>r.photos[k].length).map(k=>{const it=items.find(i=>i.id===k);return it?itemLabel(it):k});
   return `<div class="row between" style="margin-bottom:8px">
-     <button class="btn ghost" data-a="changeEval">← ${esc(ev.titre)}</button>
+     <span class="row" style="gap:8px"><button class="btn ghost" data-a="changeEval">← ${esc(ev.titre)}</button><button class="btn small ${ui.editGrid?'primary':''}" data-a="toggleEdit" aria-pressed="${!!ui.editGrid}">${ui.editGrid?'Terminer les modifications':'Modifier la grille'}</button></span>
      <span class="muted" style="font-size:.88rem">${esc(cls?.nom||'')} · ${esc(frDate(ev.date))} · ${esc(ev.type||'')}${ev.activite?' · Activité '+esc(ev.activite):''}${act?' · '+act.unit:''} · ${CUR.ech} niveaux · ${AFF_LBL[CUR.aff]}</span></div>
   <div class="who" style="margin-bottom:14px">
     <div class="nm">${esc(fullName(st))}</div>
@@ -754,6 +763,7 @@ function viewEvaluer(){
   </div>
   <div class="split">
    <div>
+    ${ui.editGrid?`<div class="banner">Modification de la grille : supprimez les questions ou critères inutiles. Les notes déjà saisies sur une ligne supprimée ne comptent plus, pour tous les élèves.</div>`:''}
     ${r.statut?`<div class="banner">${r.statut==='absent'?'Élève noté absent':'Travail non rendu'} : aucun résultat n’est calculé. Touchez à nouveau le bouton pour annuler.</div>`:''}
     ${items.map(it=>itemRow(r,it,items,eq,qev)).join('')}
    </div>
@@ -783,7 +793,10 @@ function itemRow(r,it,items,eq,qev){
   const off=it.comp&&!it.crits.length?COMPS[it.comp][1]:null;
   const ph=(r.photos?.[it.id])||[]; const up=uploading[r.id+'|'+it.id]||0;
   const open=ui.open===it.id && off;
-  const tags=[it.q&&it.comp?`<span class="pill">${it.comp}</span>`:'', qev?`<span class="pill">${ptsTxt(it.poids)}</span>`:(!eq?`<span class="pill">${String(pctOf(it,items)).replace('.',',')} %</span>`:'')].filter(Boolean).join(' ');
+  const pg=ptsGot(it,r,qev);
+  const tags=[it.q&&it.comp?`<span class="pill">${it.comp}</span>`:'', !qev&&!eq?`<span class="pill">${String(pctOf(it,items)).replace('.',',')} %</span>`:''].filter(Boolean).join(' ');
+  const gotB=pg?`<span class="got${pg.got!=null?' on':''}" title="Points obtenus">${pg.got==null?'–':nb(pg.got)}<small> / ${ptsTxt(pg.base)}</small></span>`:'';
+  const ed=ui.editGrid, delQ=ed?`<button class="btn small danger" data-a="delQ" data-id="${esc(it.id)}">Supprimer ${it.q?'la question':'la compétence'}</button>`:'';
   const head=`<span class="t"><span class="code">${esc(itemLabel(it))}</span> ${esc(it.texte)}</span>${tags||off?`<span class="row" style="gap:6px">${tags}${off?`<span class="h">${open?'Masquer':'Voir'} les critères ${it.comp}</span>`:''}</span>`:''}`;
   const lv=(key,v)=>lvOrder().map(i=>[LEVELS[i],i]).map(([l,i])=>`<button class="lv" data-a="lvl" data-c="${esc(key)}" data-v="${i}" aria-pressed="${v===i}" ${r.statut?'disabled':''}>${l.h||esc(l.n)}</button>`).join('');
   const cam=`<button class="cam" data-a="photo" data-c="${esc(it.id)}" aria-label="Prendre une photo pour ${esc(itemLabel(it))}${ph.length?' ('+ph.length+' déjà)':''}">${IC.cam}${ph.length?`<span class="badge">${ph.length}</span>`:''}</button>`;
@@ -791,12 +804,15 @@ function itemRow(r,it,items,eq,qev){
   if(it.crits.length){
     const x=itemRatio(it,r);
     return `<div class="comp" id="comp-${esc(it.id)}">
-     <div class="chead"><div class="ctitle">${head}</div>${x!=null?`<span class="cell sum c${lvlIdx(x)}" title="${Math.round(x*100)} %">${LEVELS[lvlIdx(x)].a}</span>`:''}${cam}</div>
-     ${it.crits.map(c=>`<div class="cline sub"><div class="ctitle"><span class="t2">${esc(c.t)}</span><span class="h2">${ptsTxt(c.pts)}</span></div>${lv(c.key,r.niveaux?.[c.key])}<span aria-hidden="true"></span></div>${cmtBlock(r,c.key,c.t)}`).join('')}
+     ${ed?`<div class="editbar">${delQ}</div>`:''}
+     <div class="chead"><div class="ctitle">${head}</div>${gotB}${x!=null?`<span class="cell sum c${lvlIdx(x)}" title="${Math.round(x*100)} %">${LEVELS[lvlIdx(x)].a}</span>`:''}${cam}</div>
+     ${it.crits.map(c=>{const cv=r.statut?null:r.niveaux?.[c.key];return `<div class="cline sub"><div class="ctitle"><span class="t2">${esc(c.t)}</span><span class="h2">${cv!=null?nb(lvF(cv)*c.pts)+' / ':''}${ptsTxt(c.pts)}</span>${ed?`<button class="btn small danger cdel" data-a="delC" data-id="${esc(it.id)}" data-k="${c.k}">Supprimer le critère</button>`:''}</div>${lv(c.key,r.niveaux?.[c.key])}<span aria-hidden="true"></span></div>${cmtBlock(r,c.key,c.t)}`}).join('')}
      ${thumbs}
     </div>`;
   }
   return `<div class="comp" id="comp-${esc(it.id)}">
+   ${ed?`<div class="editbar">${delQ}</div>`:''}
+   ${gotB?`<div class="gotrow">${gotB}</div>`:''}
    <div class="cline">
     ${off?`<button class="ctitle" data-a="toggleCrit" data-c="${esc(it.id)}" aria-expanded="${!!open}">${head}</button>`:`<div class="ctitle">${head}</div>`}
     ${lv(it.id,r.niveaux?.[it.id])}
@@ -1032,7 +1048,7 @@ const A = {
   back(){ui.ficheId=null;render()},
   openRes(t){flush();const ev=S.evaluations.find(e=>e.id===t.dataset.ev);ui.evalId=ev.id;ui.classId=ev.class_id;ui.stuIdx=stuOf(ev.class_id).findIndex(s=>s.id===t.dataset.st);ui.tab='evaluer';ui.ficheId=null;ui.newEval=false;ui.open=null;render();window.scrollTo(0,0)},
   openEval(t){ui.evalId=t.dataset.id;ui.stuIdx=0;ui.newEval=false;ui.open=null;render();window.scrollTo(0,0)},
-  changeEval(){flush();ui.newEval=true;ui.draft=newDraft();render()},
+  changeEval(){flush();ui.editGrid=false;ui.newEval=true;ui.draft=newDraft();render()},
   draftMode(t){readDraft();ui.draft.mode=t.dataset.v;rerenderKeep()},
   parseQ(){
     readDraft(); const d=ui.draft; const qs=parseQuestions(d.paste);
@@ -1059,7 +1075,7 @@ const A = {
     const titre=(d.titre||'').trim(); if(!titre){toast('Donnez un titre à l’évaluation.');$('#neTitre').focus();return}
     let comps;
     if(d.mode==='ref') comps=CODES.filter(c=>d.ref[c]!=null).map(c=>{const crits=COMPS[c][1].map((t,k)=>({t,on:d.refCrit[c]?.[k]?.on,pts:d.refCrit[c]?.[k]?.pts??1})).filter(x=>x.on).map(x=>({t:x.t,pts:x.pts||0}));return crits.length?{code:c,poids:d.ref[c]||0,crits}:{code:c,poids:d.ref[c]||0}});
-    else comps=d.items.filter(it=>(it.texte||'').trim()).map((it,i)=>{const crits=(it.crits||[]).filter(c=>(c.t||'').trim()).map(c=>({t:c.t.trim(),pts:c.pts??1}));const sum=crits.reduce((a,c)=>a+(+c.pts||0),0);const o={id:'q'+(i+1),code:it.comp||null,texte:it.texte.trim(),poids:it.poids??(crits.length?sum:1)};if(crits.length)o.crits=crits;return o});
+    else comps=d.items.filter(it=>(it.texte||'').trim()).map((it,i)=>{const crits=(it.crits||[]).filter(c=>(c.t||'').trim()).map(c=>({t:c.t.trim(),pts:c.pts??1}));const sum=crits.reduce((a,c)=>a+(+c.pts||0),0);const o={id:'q'+(i+1),code:it.comp||null,texte:it.texte.trim(),poids:it.poids??(crits.length?sum:1)};if(it.poids==null&&crits.length)o.pa=true;if(crits.length)o.crits=crits;return o});
     if(!comps.length){toast(d.mode==='ref'?'Cochez au moins une compétence.':'Ajoutez au moins une question.');return}
     if(!comps.some(c=>c.poids>0)) comps.forEach(c=>c.poids=1);
     comps.push({meta:true,echelle:d.ech===5?5:4,affichage:d.aff||'note20'});
@@ -1070,6 +1086,21 @@ const A = {
   },
   prevStu(){flush();ui.stuIdx--;ui.open=null;ui.cmOpen={};render();window.scrollTo(0,0)},
   nextStu(){flush();ui.stuIdx++;ui.open=null;ui.cmOpen={};render();window.scrollTo(0,0)},
+  toggleEdit(){ui.editGrid=!ui.editGrid;rerenderKeep()},
+  async delQ(t){
+    const ev=curEval(); const items=itemsOf(ev); const it=items.find(i=>i.id===t.dataset.id); if(!it)return;
+    if(items.length<=1){toast('La grille doit garder au moins une ligne. Supprimez plutôt l’évaluation.');return}
+    if(!await confirmBox(`Supprimer ${itemLabel(it)} ?`,`« ${it.texte} » sera retirée de la grille pour tous les élèves. Les notes déjà saisies sur cette ligne ne compteront plus.`,'Supprimer'))return;
+    const nev=structuredClone(ev); const c=nev.comps.find(x=>x&&!x.meta&&(x.id||x.code)===it.id); c.del=true;
+    if(await save('evaluations',nev,'Ligne supprimée')){Object.assign(ev,nev);rerenderKeep()}
+  },
+  async delC(t){
+    const ev=curEval(); const nev=structuredClone(ev); const c=nev.comps.find(x=>x&&!x.meta&&(x.id||x.code)===t.dataset.id); const cr=c?.crits?.[+t.dataset.k]; if(!cr)return;
+    const left=c.crits.filter(x=>!x.del).length;
+    if(!await confirmBox('Supprimer ce critère ?',`« ${cr.t} » sera retiré pour tous les élèves.${left<=1?' C’était le dernier critère : la ligne sera ensuite notée d’un seul bloc.':''}`,'Supprimer'))return;
+    cr.del=true;
+    if(await save('evaluations',nev,'Critère supprimé')){Object.assign(ev,nev);rerenderKeep()}
+  },
   openCm(t){ui.cmOpen=ui.cmOpen||{};ui.cmOpen[t.dataset.k]=true;rerenderKeep();const ta=app.querySelector(`[data-cm="${CSS.escape(t.dataset.k)}"]`);ta?.focus()},
   toggleCrit(t){ui.open=ui.open===t.dataset.c?null:t.dataset.c;rerenderKeep()},
   lvl(t){const {r}=curCtx();const v=+t.dataset.v,c=t.dataset.c;r.niveaux=r.niveaux||{};if(r.niveaux[c]===v)delete r.niveaux[c];else r.niveaux[c]=v;putRes(r);rerenderKeep()},
@@ -1179,13 +1210,13 @@ async function makePdf(ev,studs,btn){
       if(act){y+=5;doc.setTextColor(...mut);doc.setFontSize(9.5);T(`Activité ${ev.activite} - ${act.name} · Unité ${act.unit}`,M,y)}
       if(r.note_manuelle!=null&&n.calc!=null){y+=5;doc.setTextColor(...mut);doc.setFontSize(9.5);T(`Résultat ajusté par l'enseignant (calculé : ${fmtRes(n.calc)})`,M,y)}
       y+=8;doc.setDrawColor(...ink);doc.setLineWidth(.5);doc.line(M,y,W-M,y);y+=6;
-      doc.setFontSize(8.5);doc.setTextColor(...mut);doc.setFont('helvetica','bold');T(items.some(i=>i.q)?'Question / critère':'Compétence',M,y);if(qev)T('Points',W-M-54,y); else if(!eq)T('Poids',W-M-54,y);T('Niveau',W-M-38,y);y+=5;
+      doc.setFontSize(8.5);doc.setTextColor(...mut);doc.setFont('helvetica','bold');T(items.some(i=>i.q)?'Question / critère':'Compétence',M,y);if(qev||items.some(i=>i.crits.length))T('Points',W-M-54,y); else if(!eq)T('Poids',W-M-54,y);T('Niveau',W-M-38,y);y+=5;
       for(const it of items){
         const head=`${itemLabel(it)}  ${it.texte}${it.q&&it.comp?'  ('+it.comp+')':''}`;
         const lines=doc.splitTextToSize(pdfSafe(head),W-2*M-64);
         need(lines.length*4.6+3);
         doc.setFont('helvetica',it.crits.length?'bold':'normal');doc.setFontSize(10);doc.setTextColor(...ink);doc.text(lines,M,y);
-        if(qev)T(ptsTxt(it.poids),W-M-54,y); else if(!eq)T(String(pctOf(it,items)).replace('.',',')+' %',W-M-54,y);
+        const pgp=ptsGot(it,r,qev); if(pgp)T(`${pgp.got==null?'-':nb(pgp.got)} / ${ptsTxt(pgp.base)}`,W-M-54,y); else if(!eq)T(String(pctOf(it,items)).replace('.',',')+' %',W-M-54,y);
         const x=r.statut?null:itemRatio(it,r), v=x==null?null:lvlIdx(x);
         const box=(vv,yy)=>{if(vv!=null){doc.setFillColor(...LC[vv]);doc.roundedRect(W-M-40,yy-3.8,40,5.6,1.2,1.2,'F');doc.setTextColor(...(vv===3?[255,255,255]:ink));doc.setFont('helvetica','bold');doc.setFontSize(9);T(LEVELS[vv].n,W-M-20,yy,{align:'center'})}else{doc.setTextColor(...mut);doc.setFont('helvetica','normal');T('-',W-M-20,yy,{align:'center'})}};
         box(v,y); y+=lines.length*4.6+2.4;
@@ -1193,7 +1224,7 @@ async function makePdf(ev,studs,btn){
         if(!it.crits.length) cmPdf(it.id,6);
         for(const c of it.crits){
           const cl=doc.splitTextToSize(pdfSafe('- '+c.t),W-2*M-70); need(cl.length*4.3+2);
-          doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...mut);doc.text(cl,M+6,y);T(ptsTxt(c.pts),W-M-54,y);
+          doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(...mut);doc.text(cl,M+6,y);{const cvv=r.statut?null:r.niveaux?.[c.key];T(`${cvv!=null?nb(lvF(cvv)*c.pts)+' / ':''}${ptsTxt(c.pts)}`,W-M-54,y)}
           const cv=r.statut?null:r.niveaux?.[c.key]; box(cv??null,y); y+=cl.length*4.3+1.8; cmPdf(c.key,12);
         }
       }
