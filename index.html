@@ -229,6 +229,8 @@ tr.click:hover td.n{color:var(--blue)}
 .gotrow{display:flex;justify-content:flex-end;margin-bottom:-4px}
 .editbar{display:flex;justify-content:flex-end;padding-bottom:4px;border-bottom:1px dashed var(--line)}
 .cdel{min-height:32px;padding:0 10px;font-size:.78rem;margin-left:auto}
+.sheet .btn.big{min-height:56px;font-size:1.05rem;width:100%}
+.sheet .btn.big svg{width:22px;height:22px}
 /* overlays */
 .ov{position:fixed;inset:0;z-index:50;background:rgba(15,22,30,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .ov img{max-width:100%;max-height:72vh;border-radius:8px}
@@ -252,6 +254,7 @@ tr.click:hover td.n{color:var(--blue)}
 </header>
 <main class="wrap" id="app"><div class="empty">Chargement…</div></main>
 <input type="file" id="photoIn" accept="image/*" multiple hidden>
+<input type="file" id="photoCam" accept="image/*" capture="environment" hidden>
 <input type="file" id="csvIn" accept=".csv,.txt,text/csv,text/plain" hidden>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -1108,7 +1111,17 @@ const A = {
   addFav(t){const {r}=curCtx();const f=S.fav[+t.dataset.i];r.commentaire=(r.commentaire?r.commentaire.trim()+' ':'')+f;putRes(r);const ta=$('#com');if(ta)ta.value=r.commentaire},
   async delFav(t){S.fav.splice(+t.dataset.i,1);await save('settings',{id:'favoris',valeur:S.fav});rerenderKeep()},
   async saveFav(){const v=($('#com').value||'').trim();if(!v){toast('Écrivez d’abord un commentaire.');return}if(S.fav.includes(v)){toast('Déjà dans les favoris.');return}S.fav.push(v);await save('settings',{id:'favoris',valeur:S.fav},'Ajouté aux favoris');rerenderKeep()},
-  photo(t){photoCtx={...curCtx(),code:t.dataset.c};const fi=$('#photoIn');fi.value='';fi.click()},
+  photo(t){
+    photoCtx={...curCtx(),code:t.dataset.c};
+    const ov=document.createElement('div');ov.className='ov';ov.setAttribute('role','dialog');ov.setAttribute('aria-label','Ajouter une photo');
+    ov.innerHTML=`<div class="dlg sheet"><h2>Ajouter une photo</h2>
+      <button class="btn primary big" data-p="cam">${IC.cam.replace('#2F6DB5','#FFFFFF')}Prendre une photo</button>
+      <button class="btn big" data-p="gal">Choisir dans la galerie</button>
+      <button class="btn ghost" data-p="x">Annuler</button></div>`;
+    document.body.appendChild(ov); ov.querySelector('[data-p="cam"]').focus();
+    ov.addEventListener('click',e=>{const b=e.target.closest('[data-p]');if(!b&&e.target!==ov)return;ov.remove();if(!b||b.dataset.p==='x')return;
+      const fi=$(b.dataset.p==='cam'?'#photoCam':'#photoIn');fi.value='';fi.click()});
+  },
   async viewPhoto(t){
     const {r}=curCtx(); const code=t.dataset.c, path=r.photos[code][+t.dataset.i]; const u=(await urlsFor([path]))[path];
     const ov=document.createElement('div');ov.className='ov';ov.setAttribute('role','dialog');
@@ -1163,7 +1176,7 @@ app.addEventListener('input',e=>{
   else if(t.dataset.itText!=null){t.style.height='auto';t.style.height=t.scrollHeight+'px'}
 });
 $('#csvIn').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;let txt=await f.text();if(txt.includes('�')){const buf=await f.arrayBuffer();txt=new TextDecoder('windows-1252').decode(buf)}await addStudents(parseList(txt))});
-$('#photoIn').addEventListener('change',async e=>{
+async function handlePhotos(e){
   const files=[...e.target.files]; const ctx=photoCtx; if(!files.length||!ctx)return;
   const key=ctx.r.id+'|'+ctx.code; uploading[key]=(uploading[key]||0)+files.length; if(ui.tab==='evaluer')rerenderKeep();
   for(const file of files){
@@ -1175,7 +1188,9 @@ $('#photoIn').addEventListener('change',async e=>{
     }catch(er){console.error(er);toast(/exceed|size|quota/i.test(er?.message||'')?'Espace de stockage des photos plein.':'La photo n’a pas pu être envoyée. Vérifiez la connexion.')}
     finally{uploading[key]--; if(ui.tab==='evaluer')rerenderKeep()}
   }
-});
+}
+$('#photoIn').addEventListener('change',handlePhotos);
+$('#photoCam').addEventListener('change',handlePhotos);
 
 /* ======================================================================
    9. EXPORTS
